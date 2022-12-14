@@ -16,7 +16,7 @@ class Transaction {
     transaction.outputs.push(
       ...[
         {
-          amount: senderWallet.balance - amount,
+          amount: (senderWallet.balance - amount),
           address: senderWallet.publicKey,
         },
         { amount: amount, address: recipient },
@@ -58,6 +58,8 @@ class Transaction {
 
     return this;
   }
+
+
 }
 
 module.exports = Transaction;
