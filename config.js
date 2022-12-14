@@ -1,0 +1,5 @@
+const DIFFICULTY = 4;
+const MINE_RATE = 3000000;
+const INITIAL_BALANCE = 1000;
+
+module.exports = {DIFFICULTY, MINE_RATE, INITIAL_BALANCE};
