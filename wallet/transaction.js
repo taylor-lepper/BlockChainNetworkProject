@@ -12,7 +12,7 @@ class Transaction {
       console.log(`Amount : ${amount} exceeds the balance`);
       return;
     }
-
+    let transaction = new Transaction();
     transaction.outputs.push(
       ...[
         {
