@@ -22,7 +22,7 @@ class Block {
   }
 
   static genesis() {
-    return new this(`now`, "---", "gennys-sis", [], 0, DIFFICULTY);
+    return new this(`Time of Genesis`, "---", "0006bae266e1018da7a9a85ad52eb77e705bcac91f511c4f76dc5ee39efc1b96", [], 0, DIFFICULTY);
   }
 
   static blockHash(block) {

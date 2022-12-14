@@ -1,4 +1,12 @@
 
+
+To start, run in the vsCode terminal
+npm install
+
+You will need multiple terminals to create a p2p network, I prefer git bash terminals
+and the commands below are for such
+
+
 === notice the addition of each peer for next terminals, as well as increment port # ===
 
 To connect to the 1st server        
