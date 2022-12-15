@@ -4,10 +4,10 @@ const bodyParser = require('body-parser');
 
 // import files locally
 const Blockchain = require('../blockchain');
-const Block = require('../blockchain/block');
 const P2pServer = require('./p2p-server');
 const Wallet = require("../wallet/index");
 const TransactionPool = require("../wallet/transaction-pool");
+const Miner = require("./miner");
 
 // get port from user or set the default port
 const HTTP_PORT = process.env.HTTP_PORT || 3001;
@@ -18,7 +18,7 @@ const app = express();
 // set up body parser
 app.use(bodyParser.json());
 
-// create a blockchain instance, wallet instance, and transactionPool instance
+// create a blockchain, wallet, and transactionPool instance
 const blockchain = new Blockchain();
 const wallet = new Wallet();
 const transactionPool = new TransactionPool();
@@ -26,6 +26,9 @@ const transactionPool = new TransactionPool();
 // create p2p server instance and start it
 const p2pserver = new P2pServer(blockchain, transactionPool);
 p2pserver.listen();
+
+// create miner instance using all the above
+const miner = new Miner(blockchain, transactionPool, wallet, p2pserver);
 
 // ======== API ========
 
@@ -43,6 +46,13 @@ app.post('/mine', (req,res)=> {
     res.redirect('/blocks');
 });
 
+// api to mine new transactions and create new block
+app.post('/mine-transactions', (req, res)=>{
+    const block = miner.mine();
+    console.log(`New block added: ${block.toString()}`);
+    res.redirect('/blocks');
+})
+
 // api to view transaction in the transaction pool
 app.get('/transactions',(req,res)=>{
     res.json(transactionPool.transactions);
@@ -55,6 +65,11 @@ app.post("/transact",(req,res)=>{
     p2pserver.broadcastTransaction(transaction);
     res.redirect("/transactions");
 });
+
+// api to get public key/address
+app.get('/public-key',(req,res)=>{
+    res.json({publicKey: wallet.publicKey});
+    });
 
 // server config
 app.listen(HTTP_PORT, ()=>{

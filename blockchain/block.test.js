@@ -1,12 +1,6 @@
 const Block = require('./block');
 
 
-/**
- * describe is jest specific function
- * name of the object as string for which test is written
- * function that will define a series of tests
- */
-
 describe("Block", () => {
     let data, lastBlock, block;
     // beforeEach allows you to run code before the tests
@@ -17,11 +11,6 @@ describe("Block", () => {
         block = Block.mineBlock(lastBlock, data);
     });
 
-    /**
-     * it function is used to write unit tests
-     * first param is a description
-     * second param is callback arrow function
-     */
 
     test("sets the 'data' to match the input",() => {
         expect(block.data).toEqual(data);

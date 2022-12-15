@@ -1,4 +1,5 @@
 const ChainUtil = require("../chain-util");
+const { MINING_REWARD } = require("../config");
 
 class Transaction {
   constructor() {
@@ -7,24 +8,29 @@ class Transaction {
     this.outputs = [];
   }
 
+  static transactionWithOutputs(senderWallet, outputs) {
+    const transaction = new this();
+    transaction.outputs.push(...outputs);
+    Transaction.signTransaction(transaction, senderWallet);
+    return transaction;
+  }
+
   static newTransaction(senderWallet, recipient, amount) {
     if (amount > senderWallet.balance) {
-      console.log(`Amount : ${amount} exceeds the balance`);
+      console.log(
+        `Amount : ${amount} exceeds the balance ${senderWallet.balance}`
+      );
       return;
     }
-    let transaction = new Transaction();
-    transaction.outputs.push(
-      ...[
-        {
-          amount: (senderWallet.balance - amount),
-          address: senderWallet.publicKey,
-        },
-        { amount: amount, address: recipient },
-      ]
-    );
-    Transaction.signTransaction(transaction, senderWallet);
 
-    return transaction;
+    // use helper function to create and sign transaction outputs
+    return Transaction.transactionWithOutputs(senderWallet, [
+      {
+        amount: senderWallet.balance - amount,
+        address: senderWallet.publicKey,
+      },
+      { amount: amount, address: recipient },
+    ]);
   }
 
   static signTransaction(transaction, senderWallet) {
@@ -44,22 +50,31 @@ class Transaction {
     );
   }
 
-  update(senderWallet, recipient, amount){
-    const senderOutput = this.outputs.find(output => output.address === senderWallet.publicKey);
+  static rewardTransaction(minerWallet, blockchainWallet) {
+    return Transaction.transactionWithOutputs(blockchainWallet, [
+      {
+        amount: MINING_REWARD,
+        address: minerWallet.publicKey,
+      },
+    ]);
+  }
 
-    if(amount > senderWallet.amount){
-        console.log(`Amount ${amount} exceeds balance`);
-        return;
+  update(senderWallet, recipient, amount) {
+    const senderOutput = this.outputs.find(
+      (output) => output.address === senderWallet.publicKey
+    );
+
+    if (amount > senderWallet.amount) {
+      console.log(`Amount ${amount} exceeds balance`);
+      return;
     }
 
     senderOutput.amount = senderOutput.amount - amount;
-    this.outputs.push({amount: amount, address: recipient});
+    this.outputs.push({ amount: amount, address: recipient });
     Transaction.signTransaction(this, senderWallet);
 
     return this;
   }
-
-
 }
 
 module.exports = Transaction;

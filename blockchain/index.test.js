@@ -16,14 +16,14 @@ describe("Blockchain",()=>{
     });
 
     test('adds a new block', ()=> {
-        const data = "test";
+        const data = "data";
         blockchain.addBlock(data);
         expect(blockchain.chain[blockchain.chain.length - 1].data).toEqual(data);
     });
 
     // validChain() function 
     test('validates a valid chain',()=>{
-        blockchain2.addBlock('foo');
+        blockchain2.addBlock('data');
         expect(blockchain.isValidChain(blockchain2.chain)).toBe(true);
     });
 
@@ -33,8 +33,8 @@ describe("Blockchain",()=>{
     });
 
     test('invalidates a corrupt chain',()=>{
-        blockchain2.addBlock('foo');
-        blockchain2.chain[1].data = 'not foo'
+        blockchain2.addBlock('data');
+        blockchain2.chain[1].data = 'not data'
         expect(blockchain.isValidChain(blockchain2.chain)).toBe(false);
     });
 

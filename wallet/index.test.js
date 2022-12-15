@@ -45,9 +45,9 @@ describe("Wallet", () => {
   // checks if output was created again
   test("clones the `sendAmount`output for the transaction ", () => {
     // filter will return only those items that satisfy the condition
-    // hence an array of only the required outputs
-    // map will do some processing over each individual item and replace it with something
-    // else here the amount of the output
+    // an array of only the required outputs
+    // map will process over each individual item and replace it with something else
+    // (the amount of the output)
     expect(
       transaction.outputs
         .filter((output) => output.address === recipient)
