@@ -1,4 +1,7 @@
 const Block = require("./block");
+const Wallet = require("../wallet/index");
+
+const wallet = new Wallet();
 
 class Blockchain {
   constructor() {
@@ -8,7 +11,7 @@ class Blockchain {
   addBlock(data) {
     const block = Block.mineBlock(this.chain[this.chain.length - 1], data);
     this.chain.push(block);
-
+    console.log("chain " + this.chain + "\n");
     return block;
   }
 

@@ -1,10 +1,10 @@
 // packages
-const express = require('express');
-const bodyParser = require('body-parser');
+const express = require("express");
+const bodyParser = require("body-parser");
 
 // import files locally
-const Blockchain = require('../blockchain');
-const P2pServer = require('./p2p-server');
+const Blockchain = require("../blockchain");
+const P2pServer = require("./p2p-server");
 const Wallet = require("../wallet/index");
 const TransactionPool = require("../wallet/transaction-pool");
 const Miner = require("./miner");
@@ -21,6 +21,7 @@ app.use(bodyParser.json());
 // create a blockchain, wallet, and transactionPool instance
 const blockchain = new Blockchain();
 const wallet = new Wallet();
+
 const transactionPool = new TransactionPool();
 
 // create p2p server instance and start it
@@ -32,46 +33,53 @@ const miner = new Miner(blockchain, transactionPool, wallet, p2pserver);
 
 // ======== API ========
 
-
-// api to get blocks
-app.get('/blocks', (req,res)=>{
-    res.json(blockchain.chain);
+// blocks
+app.get("/blocks", (req, res) => {
+  res.json(blockchain.chain);
 });
 
-// api to add blocks
-app.post('/mine', (req,res)=> {
-    const block = blockchain.addBlock(req.body.data);
-    console.log(`New block added: ${block.toString()}`);
-    p2pserver.syncChain();
-    res.redirect('/blocks');
+// mining
+app.post("/mine", (req, res) => {
+  const block = blockchain.addBlock(req.body.data);
+//   console.log(`New block added: ${block.toString()}`);
+  p2pserver.syncChain();
+  res.redirect("/blocks");
 });
 
-// api to mine new transactions and create new block
-app.post('/mine-transactions', (req, res)=>{
-    const block = miner.mine();
-    console.log(`New block added: ${block.toString()}`);
-    res.redirect('/blocks');
-})
-
-// api to view transaction in the transaction pool
-app.get('/transactions',(req,res)=>{
-    res.json(transactionPool.transactions);
-    });
-
-// api to create transactions
-app.post("/transact",(req,res)=>{
-    const {recipient, amount} = req.body;
-    const transaction = wallet.createTransaction(recipient, amount, transactionPool);
-    p2pserver.broadcastTransaction(transaction);
-    res.redirect("/transactions");
+app.post("/mine-transactions", (req, res) => {
+  const block = miner.mine();
+//   console.log(`New block added: ${block.toString()}`);
+  res.redirect("/blocks");
 });
 
-// api to get public key/address
-app.get('/public-key',(req,res)=>{
-    res.json({publicKey: wallet.publicKey});
-    });
+// transactions
+app.get("/transactions", (req, res) => {
+  res.json(transactionPool.transactions);
+});
+
+app.post("/transact", (req, res) => {
+  const { recipient, amount } = req.body;
+  const transaction = wallet.createTransaction(
+    recipient,
+    amount,
+    blockchain,
+    transactionPool
+  );
+  p2pserver.broadcastTransaction(transaction);
+  res.redirect("/transactions");
+});
+
+// public key
+app.get("/public-key", (req, res) => {
+  res.json({ publicKey: wallet.publicKey });
+});
+
+// balance
+app.get("/balance", (req, res) => {
+  res.json({ balance: wallet.calculateBalance(blockchain) });
+});
 
 // server config
-app.listen(HTTP_PORT, ()=>{
-    console.log(`listening on port ${HTTP_PORT}` );
+app.listen(HTTP_PORT, () => {
+  console.log(`listening on port ${HTTP_PORT}`);
 });

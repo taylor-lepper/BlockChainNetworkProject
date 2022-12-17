@@ -23,6 +23,7 @@ class Transaction {
       return;
     }
 
+
     // use helper function to create and sign transaction outputs
     return Transaction.transactionWithOutputs(senderWallet, [
       {
@@ -51,6 +52,8 @@ class Transaction {
   }
 
   static rewardTransaction(minerWallet, blockchainWallet) {
+    // minerWallet.balance += MINING_REWARD;
+    // blockchainWallet.balance -= MINING_REWARD;
     return Transaction.transactionWithOutputs(blockchainWallet, [
       {
         amount: MINING_REWARD,

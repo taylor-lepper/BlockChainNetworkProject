@@ -12,7 +12,7 @@ class Block {
   }
 
   toString() {
-    return `Block -
+    return `\nBlock -
         Timestamp : ${this.timestamp}
         Last Hash : ${this.lastHash.substring(0, 10)}
         Hash      : ${this.hash.substring(0, 10)}
@@ -22,7 +22,7 @@ class Block {
   }
 
   static genesis() {
-    return new this(`Time of Genesis`, "---", "0006bae266e1018da7a9a85ad52eb77e705bcac91f511c4f76dc5ee39efc1b96", [], 0, DIFFICULTY);
+    return new this(`Genesis Chapter 1`, "HashBrowns", "0006bae266e1018da7a9a85ad52eb77e705bcac91f511c4f76dc5ee39efc1b96", [], 0, DIFFICULTY);
   }
 
   static blockHash(block) {
