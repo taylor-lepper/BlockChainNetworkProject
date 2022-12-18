@@ -9,7 +9,6 @@ class Wallet {
     this.publicKey = this.keyPair.getPublic().encode("hex");
   }
 
-
   toString() {
     return `Wallet -
         publicKey   : ${this.publicKey.toString()}
@@ -46,7 +45,7 @@ class Wallet {
 
   calculateBalance(blockchain) {
     let balance = this.balance;
-    console.log("balance " + balance);
+
     let transactions = [];
 
     blockchain.chain.forEach((block) =>
@@ -81,6 +80,7 @@ class Wallet {
         });
       }
     });
+    console.log("balance " + balance);
     return balance;
   }
 
