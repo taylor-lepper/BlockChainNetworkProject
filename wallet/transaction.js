@@ -1,21 +1,25 @@
 const ChainUtil = require("../chain-util");
 const { MINING_REWARD } = require("../config");
 
+
+
+
 class Transaction {
-  constructor() {
-    this.id = ChainUtil.id();
+  constructor(blockchain) {
     this.input = null;
+    this.blockToBeMinedIn = blockchain.chain.length;
+    this.transferSuccessful = false;
     this.outputs = [];
   }
 
-  static transactionWithOutputs(senderWallet, outputs) {
-    const transaction = new this();
+  static transactionWithOutputs(senderWallet, outputs, blockchain) {
+    const transaction = new this(blockchain);
     transaction.outputs.push(...outputs);
     Transaction.signTransaction(transaction, senderWallet);
     return transaction;
   }
 
-  static newTransaction(senderWallet, recipient, amount) {
+  static newTransaction(senderWallet, recipient, amount, blockchain) {
     if (amount > senderWallet.balance) {
       console.log(
         `Amount : ${amount} exceeds the balance ${senderWallet.balance}`
@@ -28,43 +32,48 @@ class Transaction {
     return Transaction.transactionWithOutputs(senderWallet, [
       {
         amount: senderWallet.balance - amount,
-        address: senderWallet.publicKey,
+        address: senderWallet.address,
       },
       { amount: amount, address: recipient },
-    ]);
+    ], blockchain);
   }
 
   static signTransaction(transaction, senderWallet) {
+    let hash = ChainUtil.hash(transaction);
     transaction.input = {
-      timestamp: Date.now(),
+      transactionHash: hash,
+      dateCreated: Date.now(),
       amount: senderWallet.balance,
-      address: senderWallet.publicKey,
+      address: senderWallet.address,
+      senderPublicKey: senderWallet.publicKey,
       signature: senderWallet.sign(ChainUtil.hash(transaction.outputs)),
     };
   }
 
   static verifyTransaction(transaction) {
     return ChainUtil.verifySignature(
-      transaction.input.address,
+      transaction.input.senderPublicKey,
       transaction.input.signature,
       ChainUtil.hash(transaction.outputs)
     );
   }
 
-  static rewardTransaction(minerWallet, blockchainWallet) {
-    // minerWallet.balance += MINING_REWARD;
-    // blockchainWallet.balance -= MINING_REWARD;
+  static rewardTransaction(minerWallet, blockchainWallet, blockchain) {
+
+    blockchainWallet.balance -= MINING_REWARD;
     return Transaction.transactionWithOutputs(blockchainWallet, [
       {
         amount: MINING_REWARD,
-        address: minerWallet.publicKey,
+        address: minerWallet.address,
       },
-    ]);
+    ], blockchain);
   }
+
+
 
   update(senderWallet, recipient, amount) {
     const senderOutput = this.outputs.find(
-      (output) => output.address === senderWallet.publicKey
+      (output) => output.address === senderWallet.address
     );
 
     if (amount > senderWallet.amount) {
@@ -81,3 +90,5 @@ class Transaction {
 }
 
 module.exports = Transaction;
+
+

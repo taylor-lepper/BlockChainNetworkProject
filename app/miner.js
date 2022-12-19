@@ -17,12 +17,12 @@ class Miner {
     // console.log("blockchain wallet address " + blockchainWallet.address);
     if (validTransactions) {
       validTransactions.push(
-        Transaction.rewardTransaction(this.wallet, blockchainWallet)
+        Transaction.rewardTransaction(this.wallet.address, blockchainWallet, this.blockchain)
       );
 
 
       // create new block with those transactions
-      const block = this.blockchain.addBlock(validTransactions);
+      const block = this.blockchain.addBlock(validTransactions, this.wallet.address);
     
 
       // broadcast to peers and update chain with new block

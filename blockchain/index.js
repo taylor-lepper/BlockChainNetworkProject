@@ -8,8 +8,8 @@ class Blockchain {
     this.chain = [Block.genesis()];
   }
 
-  addBlock(data) {
-    const block = Block.mineBlock(this.chain[this.chain.length - 1], data);
+  addBlock(transactions, minedBy) {
+    const block = Block.mineBlock(this.chain[this.chain.length - 1], transactions, minedBy);
     this.chain.push(block);
     console.log("chain " + this.chain + "\n");
     return block;

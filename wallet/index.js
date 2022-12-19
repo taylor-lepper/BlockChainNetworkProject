@@ -1,18 +1,32 @@
 const { INITIAL_BALANCE } = require("../config");
 const ChainUtil = require("../chain-util");
 const Transaction = require("./transaction");
+const ethers = require("ethers");
+const { compressPublicKey } = require("../chain-util");
 
 class Wallet {
   constructor() {
+    // let wallet =  ethers.Wallet.createRandom();
+     // this.privateKey2 = wallet.privateKey;
+         // this.address2 = wallet.address;
+             // this.publicKey2 = ChainUtil.compressPublicKey(this.publicKeyUnCompressed2);
+            //  this.publicKeyUnCompressed2 = wallet.publicKey;
     this.balance = INITIAL_BALANCE;
     this.keyPair = ChainUtil.genKeyPair();
-    this.publicKey = this.keyPair.getPublic().encode("hex");
+    this.privateKey = "0x" + this.keyPair.getPrivate("hex");
+    this.publicKey = "0x" + this.keyPair.getPublic().encode("hex");
+    this.address = "0x" + ChainUtil.computeAddressFromPrivKey(this.privateKey);
+    this.publicKeyCompressed = ChainUtil.compressPublicKey(this.publicKey);
+
+
   }
 
   toString() {
     return `Wallet -
+        balance     : ${this.balance}
         publicKey   : ${this.publicKey.toString()}
-        balance     : ${this.balance}`;
+        privateKey  : ${this.privateKey.toString()}
+        address     : ${this.address.toString()}`;
   }
 
   sign(dataHash) {
@@ -20,7 +34,7 @@ class Wallet {
   }
 
   createTransaction(recipient, amount, blockchain, transactionPool) {
-    this.balance = this.calculateBalance(blockchain);
+    // this.balance = this.calculateBalance(blockchain);
 
     if (amount > this.balance) {
       `Amount ${amount} exceeds the current balance: ${this.balance}`;
@@ -35,7 +49,7 @@ class Wallet {
     } else {
       // creates new transaction and updates the transaction pool
 
-      transaction = Transaction.newTransaction(this, recipient, amount);
+      transaction = Transaction.newTransaction(this, recipient, amount, blockchain);
       //   console.log(transaction);
       transactionPool.updateOrAddTransaction(transaction);
       //   console.log("update or add transaction should be fired");
@@ -48,18 +62,22 @@ class Wallet {
 
     let transactions = [];
 
+    // get transactions from chain
     blockchain.chain.forEach((block) =>
       block.data.forEach((transaction) => {
         transactions.push(transaction);
       })
     );
 
+    // find all transactions matching address
     const walletInputTs = transactions.filter(
       (transaction) => transaction.input.address === this.publicKey
     );
 
     let startTime = 0;
 
+    // if any matching transactions, take only most recent input
+    // -and set balance to that
     if (walletInputTs.length > 0) {
       const recentInputT = walletInputTs.reduce((prev, current) =>
         prev.input.timestamp > current.input.timestamp ? prev : current
@@ -71,6 +89,7 @@ class Wallet {
       startTime = recentInputT.input.timestamp;
     }
 
+    // check time stamp, then add valid outputs to balance
     transactions.forEach((transaction) => {
       if (transaction.input.timestamp > startTime) {
         transaction.outputs.find((output) => {
@@ -87,6 +106,7 @@ class Wallet {
   static blockchainWallet() {
     const blockchainWallet = new this();
     blockchainWallet.address = "blockchain-reward-wallet";
+    blockchainWallet.balance = 1000000;
     return blockchainWallet;
   }
 
@@ -169,3 +189,14 @@ class Wallet {
 }
 
 module.exports = Wallet;
+
+// test
+
+// let wallet = new Wallet();
+// console.log(wallet.toString());
+
+// let wallet2 = new Wallet();
+// console.log(wallet2);
+
+
+
