@@ -1,19 +1,17 @@
 const ChainUtil = require("../chain-util");
-const { MINING_REWARD } = require("../config");
-
-
-
+const { MINING_REWARD, MINIMUM_TRANSACTION_FEE } = require("../config");
 
 class Transaction {
-  constructor(blockchain) {
+  constructor(blockchain, gas) {
     this.input = null;
     this.blockToBeMinedIn = blockchain.chain.length;
+    this.gas = gas || MINIMUM_TRANSACTION_FEE;
     this.transferSuccessful = false;
     this.outputs = [];
   }
 
-  static transactionWithOutputs(senderWallet, outputs, blockchain) {
-    const transaction = new this(blockchain);
+  static transactionWithOutputs(senderWallet, outputs, blockchain, gas) {
+    const transaction = new this(blockchain, gas);
     transaction.outputs.push(...outputs);
     Transaction.signTransaction(transaction, senderWallet);
     return transaction;
@@ -26,7 +24,6 @@ class Transaction {
       );
       return;
     }
-
 
     // use helper function to create and sign transaction outputs
     return Transaction.transactionWithOutputs(senderWallet, [

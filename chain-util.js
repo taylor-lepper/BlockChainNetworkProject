@@ -4,12 +4,6 @@ const EC = require("elliptic").ec;
 const ec = new EC("secp256k1"); // secp256k1 is the algorithm to generate key pair
 const ethers = require('ethers');
 const { v1: uuidv1 } = require('uuid');
-const { pbkdf2 } = require("crypto");
-
-const infuraKey = "88a0f67ff73e46fea3a578a43190a150";
-
-
-
 
 
 class ChainUtil {
@@ -37,13 +31,6 @@ class ChainUtil {
     return uuidv1();
   }
 
-  static getProvider(){
-    const ganache = "http://localhost:8545";
-    const infura = `https://goerli.infura.io/v3/${infuraKey}`;
-    const local = "http://localhost:5001";
-    return local;
-  }
-
   static hash(data) {
     return SHA256(JSON.stringify(data)).toString();
   }
@@ -60,6 +47,14 @@ class ChainUtil {
 
   static deCompressPublicKey(publicKey){
     return ethers.utils.computePublicKey(publicKey);
+  }
+
+  static coinFromMicroCoin(microAmount){
+    return microAmount / 1000000;
+  }
+
+  static microFromCoin(coinAmount){
+    return coinAmount * 1000000;
   }
   
 }

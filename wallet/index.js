@@ -1,16 +1,10 @@
 const { INITIAL_BALANCE } = require("../config");
 const ChainUtil = require("../chain-util");
 const Transaction = require("./transaction");
-const ethers = require("ethers");
-const { compressPublicKey } = require("../chain-util");
+
 
 class Wallet {
   constructor() {
-    // let wallet =  ethers.Wallet.createRandom();
-     // this.privateKey2 = wallet.privateKey;
-         // this.address2 = wallet.address;
-             // this.publicKey2 = ChainUtil.compressPublicKey(this.publicKeyUnCompressed2);
-            //  this.publicKeyUnCompressed2 = wallet.publicKey;
     this.balance = INITIAL_BALANCE;
     this.keyPair = ChainUtil.genKeyPair();
     this.privateKey = "0x" + this.keyPair.getPrivate("hex");
@@ -24,7 +18,7 @@ class Wallet {
   toString() {
     return `Wallet -
         balance     : ${this.balance}
-        publicKey   : ${this.publicKey.toString()}
+        publicKey   : ${this.publicKeyCompressed.toString()}
         privateKey  : ${this.privateKey.toString()}
         address     : ${this.address.toString()}`;
   }
@@ -33,7 +27,7 @@ class Wallet {
     return this.keyPair.sign(dataHash);
   }
 
-  createTransaction(recipient, amount, blockchain, transactionPool) {
+  createTransaction(senderWallet, recipient, amount, blockchain, transactionPool) {
     // this.balance = this.calculateBalance(blockchain);
 
     if (amount > this.balance) {
@@ -41,7 +35,7 @@ class Wallet {
       return;
     }
     // console.log(transactionPool);
-    let transaction = transactionPool.isExistingTransaction(this.publicKey);
+    let transaction = transactionPool.isExistingTransaction(this.address);
     if (transaction) {
       // adds to existing outputs
       console.log("existing transaction to update");
@@ -49,7 +43,7 @@ class Wallet {
     } else {
       // creates new transaction and updates the transaction pool
 
-      transaction = Transaction.newTransaction(this, recipient, amount, blockchain);
+      transaction = Transaction.newTransaction(senderWallet, recipient, amount, blockchain);
       //   console.log(transaction);
       transactionPool.updateOrAddTransaction(transaction);
       //   console.log("update or add transaction should be fired");
@@ -106,8 +100,15 @@ class Wallet {
   static blockchainWallet() {
     const blockchainWallet = new this();
     blockchainWallet.address = "blockchain-reward-wallet";
-    blockchainWallet.balance = 1000000;
+    blockchainWallet.balance = 1000000000000;
     return blockchainWallet;
+  }
+
+  static faucetWallet() {
+    const faucetWallet = new this();
+    faucetWallet.address = "faucet-wallet";
+    faucetWallet.balance = 0;
+    return faucetWallet;
   }
 
   // updateBalance(blockchain) {
@@ -194,6 +195,7 @@ module.exports = Wallet;
 
 // let wallet = new Wallet();
 // console.log(wallet.toString());
+
 
 // let wallet2 = new Wallet();
 // console.log(wallet2);

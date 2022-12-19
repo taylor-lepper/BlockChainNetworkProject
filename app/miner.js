@@ -2,6 +2,7 @@
 const Wallet = require("../wallet/index");
 const Transaction = require("../wallet/transaction");
 const blockchainWallet = Wallet.blockchainWallet();
+// console.log(blockchainWallet);
 
 class Miner {
   constructor(blockchain, transactionPool, wallet, p2pserver) {
@@ -17,7 +18,7 @@ class Miner {
     // console.log("blockchain wallet address " + blockchainWallet.address);
     if (validTransactions) {
       validTransactions.push(
-        Transaction.rewardTransaction(this.wallet.address, blockchainWallet, this.blockchain)
+        Transaction.rewardTransaction(this.wallet, blockchainWallet, this.blockchain)
       );
 
 

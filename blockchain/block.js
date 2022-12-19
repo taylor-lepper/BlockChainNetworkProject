@@ -1,6 +1,8 @@
 const ChainUtil = require("../chain-util");
 const { DIFFICULTY, MINE_RATE } = require("../config");
 
+
+
 class Block {
   constructor(index, transactions, difficulty, prevBlockHash, minedBy, blockDataHash, nonce, dateCreated, blockHash) {
     this.index = index;
@@ -25,13 +27,14 @@ class Block {
         Data      : ${this.transactions}`;
   }
 
-  static genesis() {
-    return new this(0, [], DIFFICULTY, "yesterdays-hashBrowns", `GOD-MINER`, "blockHashBrowns", 0, "Genesis-Chapter-1", "0006bae266e1018da7a9a85ad52eb77e705bcac91f511c4f76dc5ee39efc1b96");
+  static genesis(faucetTransaction, faucetWallet) {
+    faucetWallet.balance = faucetTransaction.amount;
+    return new this(0, [faucetTransaction], 0, "yesterdays-hashBrowns", `GOD-MINER`, "blockHashBrowns", 0, "Genesis-Chapter-1", "0006bae266e1018da7a9a85ad52eb77e705bcac91f511c4f76dc5ee39efc1b96");
   }
 
   static blockHash(index, transactions, difficulty, prevBlockHash, minedBy) {
     // const { index, transactions, difficulty,  prevBlockHash, minedBy } = block;
-    return Block.hash(index, transactions, difficulty, prevBlockHash, minedBy);
+    return ChainUtil.hash(index, transactions, difficulty, prevBlockHash, minedBy).toString();
   }
 
   static hash(dateCreated, prevBlockHash, transactions, nonce, difficulty) {
@@ -47,7 +50,7 @@ class Block {
     const nonce = lastBlock.nonce;
     let { difficulty } = lastBlock;
   
-    let blockDataHash = Block.blockHash(index, prevBlockHash, transactions, nonce)
+    let blockDataHash = Block.blockHash(index, transactions,difficulty,prevBlockHash, minedBy);
     
     // generate the hash of the block (MINING WORK)
     let _nonce = 0;
@@ -59,9 +62,12 @@ class Block {
       hash = Block.hash(dateCreated, prevBlockHash, transactions, _nonce, difficulty);
       // check if we have the right # of zeros (P.O.W)
     } while (hash.substring(0, difficulty) !== "0".repeat(difficulty));
-    transactions.forEach(transaction=>{
-      transaction.transferSuccessful = true;
-    });
+    if(transactions){
+      transactions.forEach(transaction=>{
+        transaction.transferSuccessful = true;
+      });
+    }
+
     return new this(index, transactions, difficulty, prevBlockHash, minedBy, blockDataHash, _nonce, dateCreated, hash);
   }
 

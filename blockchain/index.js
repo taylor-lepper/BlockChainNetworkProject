@@ -1,11 +1,13 @@
 const Block = require("./block");
 const Wallet = require("../wallet/index");
+const {FAUCET_TRANSACTION} = require("../config");
+const Transaction = require("../wallet/transaction");
 
-const wallet = new Wallet();
 
 class Blockchain {
   constructor() {
-    this.chain = [Block.genesis()];
+    this.faucetWallet = Wallet.faucetWallet();
+    this.chain = [Block.genesis(FAUCET_TRANSACTION, this.faucetWallet)];
   }
 
   addBlock(transactions, minedBy) {
