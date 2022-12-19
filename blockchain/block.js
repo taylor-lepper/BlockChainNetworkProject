@@ -27,8 +27,7 @@ class Block {
         Data      : ${this.transactions}`;
   }
 
-  static genesis(faucetTransaction, faucetWallet) {
-    faucetWallet.balance = faucetTransaction.amount;
+  static genesis(faucetTransaction) {
     return new this(0, [faucetTransaction], 0, "yesterdays-hashBrowns", `GOD-MINER`, "blockHashBrowns", 0, "Genesis-Chapter-1", "0006bae266e1018da7a9a85ad52eb77e705bcac91f511c4f76dc5ee39efc1b96");
   }
 

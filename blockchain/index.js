@@ -7,7 +7,8 @@ const Transaction = require("../wallet/transaction");
 class Blockchain {
   constructor() {
     this.faucetWallet = Wallet.faucetWallet();
-    this.chain = [Block.genesis(FAUCET_TRANSACTION, this.faucetWallet)];
+    this.faucetWallet.balance = FAUCET_TRANSACTION.amount;
+    this.chain = [Block.genesis(FAUCET_TRANSACTION)];
   }
 
   addBlock(transactions, minedBy) {
@@ -18,17 +19,21 @@ class Blockchain {
   }
 
   isValidChain(chain) {
-    if (JSON.stringify(chain[0]) !== JSON.stringify(Block.genesis()))
+    if (JSON.stringify(chain[0]) !== JSON.stringify(Block.genesis(FAUCET_TRANSACTION))){
+      console.log("bad genesis")
       return false;
+    }
+      
 
     for (let i = 1; i < chain.length; i++) {
       const block = chain[i];
       const lastBlock = chain[i - 1];
+      const { dateCreated, prevBlockHash, transactions, nonce, difficulty } = block;
       if (
-        block.lastHash !== lastBlock.hash ||
-        block.hash !== Block.blockHash(block)
-      )
-        return false;
+        block.prevBlockHash !== lastBlock.blockHash ||
+        block.blockHash !== Block.hash(dateCreated, prevBlockHash, transactions, nonce, difficulty)){
+          return false;
+        }
     }
     return true;
   }

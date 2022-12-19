@@ -67,12 +67,6 @@ class Wallet {
         });
       }
     }
-    // blockchain.chain.forEach((block) =>
-    //   block.transactions.forEach((transaction) => {
-    //     console.log(transaction);
-    //     transactions.push(transaction);
-    //   })
-    // );
 
     // find all transactions matching address
     const walletInputTs = transactions.filter(
