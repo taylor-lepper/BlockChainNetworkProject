@@ -58,13 +58,14 @@ app.get("/transactions", (req, res) => {
 });
 
 app.post("/transact", (req, res) => {
-  const { recipient, amount } = req.body;
+  const { recipient, amount, gas } = req.body;
   const transaction = wallet.createTransaction(
     wallet,
     recipient,
     amount,
     blockchain,
-    transactionPool
+    transactionPool, 
+    gas
   );
   p2pserver.broadcastTransaction(transaction);
   res.redirect("/transactions");
@@ -81,7 +82,7 @@ app.get("/address", (req, res) => {
 });
 
 app.get("/balance", (req, res) => {
-  res.json({balance: wallet.balance})
+  res.json({balance: wallet.calculateBalance(blockchain)})
 });
 
 // === faucet ===
@@ -93,7 +94,8 @@ app.post("/faucet", (req, res) => {
     recipient,
     amount,
     blockchain,
-    transactionPool
+    transactionPool,
+    0
   );
   p2pserver.broadcastTransaction(transaction);
   res.json("Waiting for block to be mined...");

@@ -50,7 +50,7 @@ class TransactionPool {
         console.log(`Invalid transaction from ${transaction.input.address}`);
         return;
       }
-      console.log(transaction);
+      // console.log(transaction);
       transaction.transferSuccessful = true;
       return transaction;
     });

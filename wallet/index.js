@@ -27,8 +27,8 @@ class Wallet {
     return this.keyPair.sign(dataHash);
   }
 
-  createTransaction(senderWallet, recipient, amount, blockchain, transactionPool) {
-    // this.balance = this.calculateBalance(blockchain);
+  createTransaction(senderWallet, recipient, amount, blockchain, transactionPool, gas) {
+    this.balance = this.calculateBalance(blockchain);
 
     if (amount > this.balance) {
       `Amount ${amount} exceeds the current balance: ${this.balance}`;
@@ -43,7 +43,7 @@ class Wallet {
     } else {
       // creates new transaction and updates the transaction pool
 
-      transaction = Transaction.newTransaction(senderWallet, recipient, amount, blockchain);
+      transaction = Transaction.newTransaction(senderWallet, recipient, amount, blockchain, gas);
       //   console.log(transaction);
       transactionPool.updateOrAddTransaction(transaction);
       //   console.log("update or add transaction should be fired");
@@ -57,15 +57,26 @@ class Wallet {
     let transactions = [];
 
     // get transactions from chain
-    blockchain.chain.forEach((block) =>
-      block.data.forEach((transaction) => {
-        transactions.push(transaction);
-      })
-    );
+    for(let i = 1; i < blockchain.chain.length; i++){
+      const block = blockchain.chain[i];
+      // console.log(block);
+      if(block.transactions){
+        block.transactions.forEach((transaction)=>{
+          // console.log(transaction);
+          transactions.push(transaction);
+        });
+      }
+    }
+    // blockchain.chain.forEach((block) =>
+    //   block.transactions.forEach((transaction) => {
+    //     console.log(transaction);
+    //     transactions.push(transaction);
+    //   })
+    // );
 
     // find all transactions matching address
     const walletInputTs = transactions.filter(
-      (transaction) => transaction.input.address === this.publicKey
+      (transaction) => transaction.input.address === this.address
     );
 
     let startTime = 0;
@@ -74,20 +85,20 @@ class Wallet {
     // -and set balance to that
     if (walletInputTs.length > 0) {
       const recentInputT = walletInputTs.reduce((prev, current) =>
-        prev.input.timestamp > current.input.timestamp ? prev : current
+        prev.input.dateCreated > current.input.dateCreated ? prev : current
       );
 
       balance = recentInputT.outputs.find(
-        (output) => output.address === this.publicKey
+        (output) => output.address === this.address
       ).amount;
-      startTime = recentInputT.input.timestamp;
+      startTime = recentInputT.input.dateCreated;
     }
 
     // check time stamp, then add valid outputs to balance
     transactions.forEach((transaction) => {
-      if (transaction.input.timestamp > startTime) {
+      if (transaction.input.dateCreated > startTime) {
         transaction.outputs.find((output) => {
-          if (output.address === this.publicKey) {
+          if (output.address === this.address) {
             balance += output.amount;
           }
         });

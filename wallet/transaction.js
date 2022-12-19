@@ -17,7 +17,7 @@ class Transaction {
     return transaction;
   }
 
-  static newTransaction(senderWallet, recipient, amount, blockchain) {
+  static newTransaction(senderWallet, recipient, amount, blockchain, gas) {
     if (amount > senderWallet.balance) {
       console.log(
         `Amount : ${amount} exceeds the balance ${senderWallet.balance}`
@@ -32,7 +32,7 @@ class Transaction {
         address: senderWallet.address,
       },
       { amount: amount, address: recipient },
-    ], blockchain);
+    ], blockchain, gas);
   }
 
   static signTransaction(transaction, senderWallet) {
