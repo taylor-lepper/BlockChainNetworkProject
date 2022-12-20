@@ -4,8 +4,8 @@ const Transaction = require("./transaction");
 
 
 class Wallet {
-  constructor() {
-    this.balance = INITIAL_BALANCE;
+  constructor(balance) {
+    this.balance = balance;
     this.keyPair = ChainUtil.genKeyPair();
     this.privateKey = "0x" + this.keyPair.getPrivate("hex");
     this.publicKey = "0x" + this.keyPair.getPublic().encode("hex");
@@ -25,6 +25,10 @@ class Wallet {
 
   sign(dataHash) {
     return this.keyPair.sign(dataHash);
+  }
+
+  createNewWallet(){
+    return new Wallet(0);
   }
 
   createTransaction(senderWallet, recipient, amount, blockchain, transactionPool, gas) {

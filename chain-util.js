@@ -1,29 +1,28 @@
 const SHA256 = require("crypto-js/sha256");
-const CryptoJS = require('crypto-js');
+const CryptoJS = require("crypto-js");
 const EC = require("elliptic").ec;
 const ec = new EC("secp256k1"); // secp256k1 is the algorithm to generate key pair
-const ethers = require('ethers');
-const { v1: uuidv1 } = require('uuid');
-
+const ethers = require("ethers");
+const { v1: uuidv1 } = require("uuid");
 
 class ChainUtil {
   static genKeyPair() {
     return ec.genKeyPair();
   }
 
-  static getPrivateKey(keyPair){
+  static getPrivateKey(keyPair) {
     return keyPair.getPrivate("hex");
   }
 
   static computeAddressFromPrivKey(privateKey) {
     var keyPair = ec.genKeyPair();
-    keyPair._importPrivate(privateKey, 'hex');
+    keyPair._importPrivate(privateKey, "hex");
     var compact = false;
-    var pubKey = keyPair.getPublic(compact, 'hex').slice(2);
+    var pubKey = keyPair.getPublic(compact, "hex").slice(2);
     var pubKeyWordArray = CryptoJS.enc.Hex.parse(pubKey);
     var hash = CryptoJS.SHA3(pubKeyWordArray, { outputLength: 256 });
     var address = hash.toString(CryptoJS.enc.Hex).slice(24);
-  
+
     return address;
   }
 
@@ -35,30 +34,40 @@ class ChainUtil {
     return SHA256(JSON.stringify(data)).toString();
   }
 
-  static verifySignature(publicKey, signature, dataHash){
-   console.log(publicKey);
-   publicKey = publicKey.substring(2);
-    return ec.keyFromPublic(publicKey, 'hex').verify(dataHash, signature);
+  static verifySignature(publicKey, signature, dataHash) {
+    console.log(publicKey);
+    publicKey = publicKey.substring(2);
+    return ec.keyFromPublic(publicKey, "hex").verify(dataHash, signature);
   }
-  
-  static compressPublicKey(publicKey){
+
+  static compressPublicKey(publicKey) {
     return ethers.utils.computePublicKey(publicKey, true);
   }
 
-  static deCompressPublicKey(publicKey){
+  static deCompressPublicKey(publicKey) {
     return ethers.utils.computePublicKey(publicKey);
   }
 
-  static coinFromMicroCoin(microAmount){
+  static coinFromMicroCoin(microAmount) {
     return microAmount / 1000000;
   }
 
-  static microFromCoin(coinAmount){
+  static microFromCoin(coinAmount) {
     return coinAmount * 1000000;
   }
-  
-}
 
+  static walletPretty(wallet) {
+    const { balance, privateKey, publicKey, address, publicKeyCompressed } =
+      wallet;
+     return wallet = {
+        balance: balance,
+        privateKey: privateKey,
+        publicKey: publicKey,
+        address: address,
+        publicKeyCompressed: publicKeyCompressed,
+      };
+  }
+}
 
 // test
 
@@ -75,7 +84,6 @@ class ChainUtil {
 // let address = ChainUtil.computeAddressFromPrivKey(privKey);
 // console.log("address");
 // console.log(address);
-
 
 // let wallet =  ethers.Wallet.createRandom();
 // console.log(wallet);

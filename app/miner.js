@@ -1,15 +1,15 @@
 // import files locally
 const Wallet = require("../wallet/index");
 const Transaction = require("../wallet/transaction");
-const blockchainWallet = Wallet.blockchainWallet();
-// console.log(blockchainWallet);
+
 
 class Miner {
-  constructor(blockchain, transactionPool, wallet, p2pserver) {
+  constructor(blockchain, transactionPool, wallet, peers, blockchainWallet) {
     this.blockchain = blockchain;
     this.transactionPool = transactionPool;
     this.wallet = wallet;
-    this.p2pserver = p2pserver;
+    this.peers = peers;
+    this.blockchainWallet = blockchainWallet;
   }
 
   mine() {
@@ -18,7 +18,7 @@ class Miner {
     // console.log("blockchain wallet address " + blockchainWallet.address);
     if (validTransactions) {
       validTransactions.push(
-        Transaction.rewardTransaction(this.wallet, blockchainWallet, this.blockchain)
+        Transaction.rewardTransaction(this.wallet, this.blockchainWallet, this.blockchain)
       );
 
 
@@ -27,9 +27,9 @@ class Miner {
     
 
       // broadcast to peers and update chain with new block
-      this.p2pserver.syncChain();
+      this.peers.syncChain();
       this.transactionPool.clear();
-      this.p2pserver.broadcastClearTransactions();
+      this.peers.broadcastClearTransactions();
 
       return block;
     }
