@@ -55,6 +55,7 @@ class Transaction {
     );
   }
 
+  // minning reward
   static rewardTransaction(minerWallet, blockchainWallet, blockchain) {
 
     blockchainWallet.balance -= MINING_REWARD;

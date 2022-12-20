@@ -67,6 +67,15 @@ class ChainUtil {
         publicKeyCompressed: publicKeyCompressed,
       };
   }
+
+  static walletBalance(wallet) {
+    const { balance, address } =
+      wallet;
+     return wallet = {
+        address: address,
+        balance: balance,
+      };
+  }
 }
 
 // test

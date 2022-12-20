@@ -38,7 +38,7 @@ const peers = new Peers(blockchain, transactionPool, wallets);
 peers.listen();
 
 // create miner instance using all the above
-const miner = new Miner(blockchain, transactionPool, wallet, peers);
+const miner = new Miner(blockchain, transactionPool, wallet, peers, blockchainWallet);
 
 // ======== API ========
 
@@ -46,6 +46,12 @@ const miner = new Miner(blockchain, transactionPool, wallet, peers);
 app.get("/blocks", (req, res) => {
   res.json(blockchain.chain);
 });
+
+app.get(`/blocks/:index`, (req, res) => {
+  let index = req.params.index;
+  res.json(blockchain.chain[index]);
+});
+
 
 // === mining ===
 app.post("/mine", (req, res) => {
@@ -103,6 +109,15 @@ app.get("/wallet/all", (req, res) => {
   res.json({ wallets: outPutWallets });
 });
 
+app.get("/wallet/all/balance", (req, res) => {
+  outPutWallets = [];
+  blockchain.wallets.forEach(wallet=>{
+    wallet = ChainUtil.walletBalance(wallet);
+    outPutWallets.push(wallet);
+  });
+  res.json({ wallets: outPutWallets });
+});
+
 app.get("/wallet/public-key", (req, res) => {
   res.json({ publicKey: wallet.publicKey });
 });
@@ -137,7 +152,7 @@ app.post("/faucet", (req, res) => {
     transactionPool,
     0
   );
-  p2pserver.broadcastTransaction(transaction);
+  peers.broadcastTransaction(transaction);
   res.json("Waiting for block to be mined...");
 });
 
