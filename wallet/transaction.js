@@ -1,17 +1,17 @@
 const ChainUtil = require("../chain-util");
-const { MINING_REWARD, MINIMUM_TRANSACTION_FEE } = require("../config");
+const { MINING_REWARD, MINIMUM_TRANSACTION_FEE, FAUCET_REWARD  } = require("../config");
 
 class Transaction {
-  constructor(blockchain, gas) {
+  constructor(blockchain) {
     this.input = null;
     this.blockToBeMinedIn = blockchain.chain.length;
-    this.gas = gas || MINIMUM_TRANSACTION_FEE;
     this.transferSuccessful = false;
     this.outputs = [];
   }
 
-  static transactionWithOutputs(senderWallet, outputs, blockchain, gas) {
-    const transaction = new this(blockchain, gas);
+  static transactionWithOutputs(senderWallet, outputs, blockchain) {
+    const transaction = new this(blockchain);
+    // console.log("trans w/outputs", transaction);
     transaction.outputs.push(...outputs);
     Transaction.signTransaction(transaction, senderWallet);
     return transaction;
@@ -22,17 +22,36 @@ class Transaction {
       console.log(
         `Amount : ${amount} exceeds the balance ${senderWallet.balance}`
       );
-      return;
+      return "Not enough balance to create transaction!";
     }
 
     // use helper function to create and sign transaction outputs
     return Transaction.transactionWithOutputs(senderWallet, [
       {
-        amount: senderWallet.balance - amount,
+        newSenderBalance: senderWallet.balance - amount - gas,
         address: senderWallet.address,
       },
-      { amount: amount, address: recipient },
-    ], blockchain, gas);
+      { sentAmount: amount, gas: gas, address: recipient },
+    ], blockchain);
+  }
+  
+  // update an existing transaction
+  update(senderWallet, recipient, amount, gas) {
+    const senderOutput = this.outputs.find(
+      (output) => output.address === senderWallet.address
+    );
+
+    if (amount > senderWallet.balance) {
+      console.log(`Amount ${amount} exceeds balance ${senderWallet.balance}`);
+      return "Not enough balance to create transaction!";
+    }
+
+    senderOutput.newSenderBalance = senderOutput.newSenderBalance - amount - gas;
+    this.outputs.push({ sentAmount: amount, gas: gas, address: recipient });
+    Transaction.signTransaction(this, senderWallet);
+    console.log("updating and signing transaction");
+
+    return this;
   }
 
   static signTransaction(transaction, senderWallet) {
@@ -40,7 +59,7 @@ class Transaction {
     transaction.input = {
       transactionHash: hash,
       dateCreated: Date.now(),
-      amount: senderWallet.balance,
+      senderBalance: senderWallet.balance,
       address: senderWallet.address,
       senderPublicKey: senderWallet.publicKey,
       signature: senderWallet.sign(ChainUtil.hash(transaction.outputs)),
@@ -55,36 +74,30 @@ class Transaction {
     );
   }
 
-  // minning reward
-  static rewardTransaction(minerWallet, blockchainWallet, blockchain) {
+  // mining reward
+  static rewardTransaction(minerWallet, blockchainWallet, blockchain, gas) {
 
     blockchainWallet.balance -= MINING_REWARD;
     return Transaction.transactionWithOutputs(blockchainWallet, [
       {
-        amount: MINING_REWARD,
+        miningReward: MINING_REWARD,
         address: minerWallet.address,
       },
-    ], blockchain);
+    ], blockchain, gas);
   }
 
+  // faucet reward
+  static faucetTransaction(recipient, faucetWallet, blockchain, gas) {
 
-
-  update(senderWallet, recipient, amount) {
-    const senderOutput = this.outputs.find(
-      (output) => output.address === senderWallet.address
-    );
-
-    if (amount > senderWallet.amount) {
-      console.log(`Amount ${amount} exceeds balance`);
-      return;
-    }
-
-    senderOutput.amount = senderOutput.amount - amount;
-    this.outputs.push({ amount: amount, address: recipient });
-    Transaction.signTransaction(this, senderWallet);
-
-    return this;
+    faucetWallet.balance -= FAUCET_REWARD;
+    return Transaction.transactionWithOutputs(faucetWallet, [
+      {
+        faucetReward: FAUCET_REWARD,
+        address: recipient.address,
+      },
+    ], blockchain, gas);
   }
+
 }
 
 module.exports = Transaction;

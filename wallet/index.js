@@ -31,11 +31,25 @@ class Wallet {
     return new Wallet(0);
   }
 
-  createTransaction(senderWallet, recipient, amount, blockchain, transactionPool, gas) {
-    this.balance = this.calculateBalance(blockchain);
+  static blockchainWallet() {
+    const blockchainWallet = new this();
+    blockchainWallet.address = "blockchain-reward-wallet";
+    blockchainWallet.balance = 1000000000000;
+    return blockchainWallet;
+  }
 
-    if (amount > this.balance) {
-      `Amount ${amount} exceeds the current balance: ${this.balance}`;
+  static faucetWallet() {
+    const faucetWallet = new this();
+    faucetWallet.address = "faucet-wallet";
+    faucetWallet.balance = 0;
+    return faucetWallet;
+  } 
+
+  createTransaction(senderWallet, recipient, amount, blockchain, transactionPool, gas) {
+    // this.balance = this.calculateBalance(blockchain);
+
+    if (amount > senderWallet.balance) {
+      console.log(`Amount ${amount} exceeds the current balance: ${senderWallet.balance}`);
       return;
     }
     // console.log(transactionPool);
@@ -43,7 +57,7 @@ class Wallet {
     if (transaction) {
       // adds to existing outputs
       console.log("existing transaction to update");
-      transaction.update(this, recipient, amount);
+      transaction.update(this, recipient, amount, gas);
     } else {
       // creates new transaction and updates the transaction pool
 
@@ -106,19 +120,7 @@ class Wallet {
     return balance;
   }
 
-  static blockchainWallet() {
-    const blockchainWallet = new this();
-    blockchainWallet.address = "blockchain-reward-wallet";
-    blockchainWallet.balance = 1000000000000;
-    return blockchainWallet;
-  }
 
-  static faucetWallet() {
-    const faucetWallet = new this();
-    faucetWallet.address = "faucet-wallet";
-    faucetWallet.balance = 0;
-    return faucetWallet;
-  }
 
   // updateBalance(blockchain) {
   //   let blocks = blockchain.chain;

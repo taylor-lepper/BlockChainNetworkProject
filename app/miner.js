@@ -16,11 +16,12 @@ class Miner {
     // create reward transaction and add to transaction pool
     const validTransactions = this.transactionPool.validTransactions();
     // console.log("blockchain wallet address " + blockchainWallet.address);
+   
     if (validTransactions) {
       validTransactions.push(
-        Transaction.rewardTransaction(this.wallet, this.blockchainWallet, this.blockchain)
+        Transaction.rewardTransaction(this.wallet, this.blockchainWallet, this.blockchain, 0)
       );
-
+      // console.log(validTransactions);
 
       // create new block with those transactions
       const block = this.blockchain.addBlock(validTransactions, this.wallet.address);

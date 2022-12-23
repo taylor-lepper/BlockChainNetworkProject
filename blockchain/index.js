@@ -94,6 +94,12 @@ class Blockchain {
     console.log("Replacing the current chain with new chain");
     this.chain = newChain;
   }
+
+  resetChain() {
+    this.wallets = [];
+    this.chain = Block.genesis(FAUCET_TRANSACTION);
+    
+  }
 }
 
 module.exports = Blockchain;

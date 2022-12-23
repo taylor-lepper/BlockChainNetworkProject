@@ -46,10 +46,10 @@ class Block {
     let hash, dateCreated;
     const prevBlockHash = lastBlock.blockHash;
     const index = lastBlock.index + 1;
-    const nonce = lastBlock.nonce;
+    // const nonce = lastBlock.nonce;
     let { difficulty } = lastBlock;
   
-    let blockDataHash = Block.blockHash(index, transactions,difficulty,prevBlockHash, minedBy);
+    let blockDataHash = Block.blockHash(index, transactions, difficulty, prevBlockHash, minedBy);
     
     // generate the hash of the block (MINING WORK)
     let _nonce = 0;
