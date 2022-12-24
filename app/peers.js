@@ -1,4 +1,4 @@
-const { joinSignature } = require("ethers/lib/utils");
+const Wallet = require("../wallet/index");
 const WebSocket = require("ws");
 const ChainUtil = require("../chain-util");
 
@@ -13,16 +13,20 @@ const MESSAGE_TYPE = {
   chain: "CHAIN",
   transaction: "TRANSACTION",
   clear_transactions: "CLEAR_TRANSACTIONS",
+  wallets: "WALLETS",
+  wallets_reset: "WALLETS_RESET",
+  chain_reset: "CHAIN_RESET",
 };
 
 class Peers {
-  constructor(blockchain, transactionPool, wallets) {
+  constructor(blockchain, transactionPool, wallet) {
     this.id = ChainUtil.id();
     this.blockchain = blockchain;
     this.transactionPool = transactionPool;
-    this.wallets = wallets;
     this.sockets = [];
     this.peers = peers;
+    this.wallets = this.blockchain.wallets;
+    this.wallet = wallet;
   }
 
   // create the p2p server and its connections
@@ -38,24 +42,20 @@ class Peers {
     this.connectToPeers();
     console.log(`Listening for peer to peer connection on port : ${P2P_PORT}`);
     console.log("peers", this.peers);
-    console.log("sockets", this.sockets);
-
   }
 
   // after making a connection to a socket
   connectSocket(socket) {
     this.sockets.push(socket);
     console.log("Socket connected");
-
+    // console.log("sockets", this.sockets);
     // register a message event listener to the socket
     this.messageHandler(socket);
-    
 
     // on new connection send the chain/wallets to the peer
 
     this.sendChain(socket);
     this.syncWallets();
-
   }
 
   connectToPeers() {
@@ -85,7 +85,7 @@ class Peers {
           break;
         case MESSAGE_TYPE.transaction:
           // add transaction to the pool or replace existing one
-          console.log(data.transaction);
+          // console.log(data.transaction);
           this.transactionPool.updateOrAddTransaction(data.transaction);
           break;
         case MESSAGE_TYPE.clear_transactions:
@@ -93,13 +93,17 @@ class Peers {
           this.transactionPool.clear();
           break;
         case MESSAGE_TYPE.wallets:
-          // sync wallets 
+          // sync wallets
           this.blockchain.replaceWallets(data.wallets);
           break;
-        case MESSAGE_TYPE.reset_chain:
-          // reset chain 
-          this.blockchain.resetChain();
+        case MESSAGE_TYPE.wallets_reset:
+          // reset wallets
+          this.blockchain.resetWallets(data.wallets);
+         
           break;
+        case MESSAGE_TYPE.chain_reset:
+          // reset chain
+          this.blockchain.resetChain(data.chain);
       }
     });
   }
@@ -118,13 +122,12 @@ class Peers {
     });
   }
 
-
   // send all wallets to peers
   sendWallet(socket) {
     socket.send(
       JSON.stringify({
         type: MESSAGE_TYPE.wallets,
-        wallets: this.wallets,
+        wallets: this.blockchain.wallets,
       })
     );
   }
@@ -136,7 +139,6 @@ class Peers {
     });
   }
 
-
   // tell peers to clears transaction pool when new block mined
   broadcastClearTransactions() {
     this.sockets.forEach((socket) => {
@@ -147,7 +149,7 @@ class Peers {
       );
     });
   }
- 
+
   // send transactions to peers
   sendTransaction(socket, transaction) {
     socket.send(
@@ -164,15 +166,40 @@ class Peers {
     });
   }
 
-  // broadcast to reset chain to each peer
-  broadcastResetChain() {
+  // tell sockets to reset wallets
+  syncWalletsNew(wallets) {
+    // console.log(wallets);
     this.sockets.forEach((socket) => {
-      socket.send(
-        JSON.stringify({
-          type: MESSAGE_TYPE.reset_chain,
-        })
-      );
+      this.sendWalletsNew(socket, wallets);
     });
+  }
+
+  // send reset wallets to peers
+  sendWalletsNew(socket, wallets) {
+    socket.send(
+      JSON.stringify({
+        type: MESSAGE_TYPE.wallets_reset,
+        wallets: wallets,
+      })
+    );
+  }
+
+  // tell sockets to reset blockchain
+  syncChainNew(blockchain) {
+    this.blockchain = blockchain;
+    this.sockets.forEach((socket) => {
+      this.sendChainNew(socket, this.blockchain);
+    });
+  }
+
+  // send reset blockchain to peers
+  sendChainNew(socket, blockchain) {
+    socket.send(
+      JSON.stringify({
+        type: MESSAGE_TYPE.chain_reset,
+        chain: blockchain.chain,
+      })
+    );
   }
 }
 

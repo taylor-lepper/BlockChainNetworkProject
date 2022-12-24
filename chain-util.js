@@ -57,24 +57,94 @@ class ChainUtil {
   }
 
   static walletPretty(wallet) {
-    const { balance, privateKey, publicKey, address, publicKeyCompressed } =
-      wallet;
-     return wallet = {
-        balance: balance,
-        privateKey: privateKey,
-        publicKey: publicKey,
-        address: address,
-        publicKeyCompressed: publicKeyCompressed,
-      };
+    const {
+      name,
+      balance,
+      privateKey,
+      publicKey,
+      address,
+      publicKeyCompressed,
+    } = wallet;
+    return (wallet = {
+      name: name,
+      balance: balance,
+      privateKey: privateKey,
+      publicKey: publicKey,
+      address: address,
+      publicKeyCompressed: publicKeyCompressed,
+    });
   }
 
   static walletBalance(wallet) {
-    const { balance, address } =
-      wallet;
-     return wallet = {
-        address: address,
-        balance: balance,
-      };
+    const { name, balance, address } = wallet;
+    return (wallet = {
+      name: name,
+      address: address,
+      balance: balance,
+    });
+  }
+
+  static randomNum() {
+    // (Math.random() * (max - min + 1) + min)    (min = 1, max = 15)
+    return Math.floor(Math.random() * (15 - 1  + 1) + 1);
+  }
+
+  static randomNameGenerator() {
+    const animals = [
+      "python",
+      "dog",
+      "platypus",
+      "squirrel",
+      "chimpanzee",
+      "dolphin",
+      "manatee",
+      "worm",
+      "starfish",
+      "seagull",
+      "baby-goat",
+      "bearded-dragon",
+      "crow",
+      "meerkat",
+      "cockroach"
+    ];
+    const numbers = [37, 42, 99, 86, 77, 33, 10, 22, 93, 11, 17, 23, 88, 44, 67];
+    const things = [
+      "trashcans",
+      "pictures",
+      "go-karts",
+      "door-mats",
+      "wet-blankets",
+      "flowers",
+      "tidepods",
+      "dirty-towels",
+      "two-and-a-half-thirds-full-cups",
+      "trees-blowing-in-the-wind",
+      "table",
+      "usb-c-cords",
+      "air-guitars",
+      "small-origamis",
+      "televion-sets"
+    ];
+    const foods = [
+      "cheeseburger",
+      "coors-light",
+      "banana",
+      "curry",
+      "pickle",
+      "hot-pocket",
+      "burrito",
+      "coffee",
+      "cereal",
+      "milk",
+      "wheat-thin",
+      "banana-bread",
+      "tea",
+      "spaghetti-and-a-meat-a-balls",
+      "drunken-noodle"
+    ];
+  
+    let name = `${numbers[this.randomNum() -1 ]} ${animals[this.randomNum() -1]} ${foods[this.randomNum()-1]} ${things[this.randomNum()-1]}`;
+    return name;
   }
 }
 

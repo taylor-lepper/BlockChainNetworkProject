@@ -11,8 +11,6 @@ const TransactionPool = require("../wallet/transaction-pool");
 const Miner = require("./miner");
 const ChainUtil = require("../chain-util");
 
-let wallets = [];
-
 // get port from user or set the default port
 const HTTP_PORT = process.env.HTTP_PORT || 3001;
 
@@ -22,18 +20,21 @@ const app = express();
 // set up body parser
 app.use(bodyParser.json());
 
-// create a blockchain, wallet, and transactionPool instance
-const blockchain = new Blockchain();
+// create a blockchain, and transactionPool instance
+var blockchain = new Blockchain();
 const transactionPool = new TransactionPool();
-const faucetWallet = blockchain.faucetWallet;
-const wallet = new Wallet(100000000000);
-const blockchainWallet = Wallet.blockchainWallet();
-wallets.push(blockchainWallet, faucetWallet, wallet);
-blockchain.replaceWallets(wallets);
+var wallet = new Wallet(5555);
 
 // create p2p server instance and start it
-const peers = new Peers(blockchain, transactionPool, wallets);
+const peers = new Peers(blockchain, transactionPool, wallet);
 peers.listen();
+
+
+// add wallet to storage
+wallet.pushIt(blockchain, peers);
+blockchain.replaceWallets(blockchain.wallets);
+
+
 
 // create miner instance using all the above
 const miner = new Miner(
@@ -41,26 +42,32 @@ const miner = new Miner(
   transactionPool,
   wallet,
   peers,
-  blockchainWallet
+  blockchain.blockchainWallet
 );
-
+// =======================================================================
 // ======== API ========
+// =======================================================================
 
-// === blocks/chain api ===
+// ======= blocks/chain api =======
 app.get("/blockchain", (req, res) => {
   res.json(blockchain.chain);
 });
 
 app.get(`/blockchain/:index`, (req, res) => {
-  let index = req.params.index;
-  res.json(blockchain.chain[index]);
+  res.json(blockchain.chain[req.params.index]);
 });
 
-app.get("/blockchain/reset", (req, res) => {
-  peers.broadcastResetChain();
+app.post("/blockchain/reset", (req, res) => {
+  transactionPool.clear();
+  blockchain.chain = blockchain.chain[0];
+  peers.syncChainNew(blockchain);
+  blockchain.resetWallets(blockchain.wallets);
+  peers.syncWalletsNew(blockchain.wallets);
+
+  res.json("Resetting the blockchain to Phil Collin's greatest album...");
 });
 
-// === mining api ===
+// ======= mining api =======
 app.post("/mine", (req, res) => {
   const block = blockchain.addBlock(req.body.data);
   //   console.log(`New block added: ${block.toString()}`);
@@ -74,7 +81,7 @@ app.post("/mine-transactions", (req, res) => {
   res.redirect("/blockchain");
 });
 
-// === transactions api ===
+// ======= transactions api =======
 app.get("/transactions", (req, res) => {
   res.json(transactionPool.transactions);
 });
@@ -96,7 +103,7 @@ app.post("/transact", (req, res) => {
   res.redirect("/transactions");
 });
 
-// === wallet api ===
+// ======= wallet api =======
 app.get("/wallet", (req, res) => {
   let matchingWallet = wallets.filter(
     (walletInArr) => walletInArr.address === wallet.address
@@ -141,16 +148,12 @@ app.get("/wallet/balance", (req, res) => {
 });
 
 app.post("/wallet/new", (req, res) => {
-  const newWallet = wallet.createNewWallet(0);
-  wallets.push(newWallet);
-  blockchain.wallets.push(newWallet);
-  // console.log(newWallet);
-
-  peers.syncWallets();
+  const newWallet = new Wallet(0, req.body.name);
+  newWallet.pushIt(blockchain, peers);
   res.json({ newWallet: ChainUtil.walletPretty(newWallet) });
 });
 
-// === faucet ===
+// ======= faucet =======
 app.post("/faucet", (req, res) => {
   let transaction = Transaction.faucetTransaction(
     wallet,

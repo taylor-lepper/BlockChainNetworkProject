@@ -10,9 +10,11 @@ class Blockchain {
     this.faucetWallet = Wallet.faucetWallet();
     this.faucetWallet.balance = FAUCET_TRANSACTION.amount;
     this.chain = [Block.genesis(FAUCET_TRANSACTION)];
-    this.wallets = [];
+    this.blockchainWallet = Wallet.blockchainWallet();
+    this.wallets = [this.blockchainWallet, this.faucetWallet];
   }
 
+  
   updateWallets(newWallets) {
     // console.log("newWallets");
     // console.log(newWallets);
@@ -39,6 +41,23 @@ class Blockchain {
     console.log("Adding the current wallets with old ones");
     this.updateWallets(newWallets);
   }
+
+  resetWallets(newWallets){
+    this.wallets = [];
+    console.log("Resetting the current wallets");
+    newWallets.forEach(wallet =>{
+      if(wallet.address === "blockchain-reward-wallet"){
+        wallet.balance = 1000000000000; 
+      } else if( wallet.address === "faucet-wallet"){
+        wallet.balance = 9999999999999;
+      } else{
+        wallet.balance = 0;
+      }
+      this.wallets.push(wallet);
+    });
+    console.log("new ones", this.wallets);
+  }
+
 
   addBlock(transactions, minedBy) {
     const block = Block.mineBlock(
@@ -95,10 +114,8 @@ class Blockchain {
     this.chain = newChain;
   }
 
-  resetChain() {
-    this.wallets = [];
-    this.chain = Block.genesis(FAUCET_TRANSACTION);
-    
+  resetChain(chain) {
+    this.chain = chain;
   }
 }
 

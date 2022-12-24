@@ -1,22 +1,22 @@
 const { INITIAL_BALANCE } = require("../config");
 const ChainUtil = require("../chain-util");
 const Transaction = require("./transaction");
-
+const Peers = require("../app/peers");
 
 class Wallet {
-  constructor(balance) {
+  constructor(balance, name) {
+    this.name = name || ChainUtil.randomNameGenerator();
     this.balance = balance;
     this.keyPair = ChainUtil.genKeyPair();
     this.privateKey = "0x" + this.keyPair.getPrivate("hex");
     this.publicKey = "0x" + this.keyPair.getPublic().encode("hex");
     this.address = "0x" + ChainUtil.computeAddressFromPrivKey(this.privateKey);
     this.publicKeyCompressed = ChainUtil.compressPublicKey(this.publicKey);
-
-
   }
 
   toString() {
     return `Wallet -
+        name        : ${this.name}
         balance     : ${this.balance}
         publicKey   : ${this.publicKeyCompressed.toString()}
         privateKey  : ${this.privateKey.toString()}
@@ -27,21 +27,24 @@ class Wallet {
     return this.keyPair.sign(dataHash);
   }
 
-  createNewWallet(){
-    return new Wallet(0);
+  wallletByPort(){
+    return this.wallet;
+  }
+
+  pushIt(blockchain, peers){
+    blockchain.wallets.push(this);
+    peers.syncWallets();
   }
 
   static blockchainWallet() {
-    const blockchainWallet = new this();
+    const blockchainWallet = new this(1000000000000, "Mining Rewards Wallet from Genesis");
     blockchainWallet.address = "blockchain-reward-wallet";
-    blockchainWallet.balance = 1000000000000;
     return blockchainWallet;
   }
 
   static faucetWallet() {
-    const faucetWallet = new this();
+    const faucetWallet = new this(99999999999999, "Faucet Wallet ");
     faucetWallet.address = "faucet-wallet";
-    faucetWallet.balance = 0;
     return faucetWallet;
   } 
 
