@@ -1,5 +1,10 @@
 const ChainUtil = require("../chain-util");
-const { MINING_REWARD, MINIMUM_TRANSACTION_FEE, FAUCET_REWARD  } = require("../config");
+const {
+  MINING_REWARD,
+  MINIMUM_TRANSACTION_FEE,
+  FAUCET_REWARD,
+} = require("../config");
+
 
 class Transaction {
   constructor(blockchain) {
@@ -18,7 +23,9 @@ class Transaction {
   }
 
   static newTransaction(senderWallet, recipient, amount, blockchain, gas) {
-    if (amount > senderWallet.balance) {
+    console.log(JSON.stringify(senderWallet.balance));
+
+    if (BigInt(amount > senderWallet.balance)) {
       console.log(
         `Amount : ${amount} exceeds the balance ${senderWallet.balance}`
       );
@@ -26,28 +33,34 @@ class Transaction {
     }
 
     // use helper function to create and sign transaction outputs
-    return Transaction.transactionWithOutputs(senderWallet, [
-      {
-        newSenderBalance: senderWallet.balance - amount - gas,
-        address: senderWallet.address,
-      },
-      { sentAmount: amount, gas: gas, address: recipient },
-    ], blockchain);
+    return Transaction.transactionWithOutputs(
+      senderWallet,
+      [
+        {
+          newSenderBalance: BigInt(senderWallet.balance - amount - gas),
+          address: senderWallet.address,
+        },
+        { sentAmount: BigInt(amount), gas: BigInt(gas), address: recipient },
+      ],
+      blockchain
+    );
   }
-  
+
   // update an existing transaction
   update(senderWallet, recipient, amount, gas) {
     const senderOutput = this.outputs.find(
       (output) => output.address === senderWallet.address
     );
 
-    if (amount > senderWallet.balance) {
+    if (BigInt(amount > senderWallet.balance)) {
       console.log(`Amount ${amount} exceeds balance ${senderWallet.balance}`);
       return "Not enough balance to create transaction!";
     }
 
-    senderOutput.newSenderBalance = senderOutput.newSenderBalance - amount - gas;
-    this.outputs.push({ sentAmount: amount, gas: gas, address: recipient });
+    senderOutput.newSenderBalance = BigInt(
+      senderOutput.newSenderBalance - amount - gas
+    );
+    this.outputs.push({ sentAmount: BigInt(amount), gas: BigInt(gas), address: recipient });
     Transaction.signTransaction(this, senderWallet);
     console.log("updating and signing transaction");
 
@@ -75,31 +88,38 @@ class Transaction {
   }
 
   // mining reward
-  static rewardTransaction(minerWallet, blockchainWallet, blockchain, gas) {
-
-    blockchainWallet.balance -= MINING_REWARD;
-    return Transaction.transactionWithOutputs(blockchainWallet, [
-      {
-        miningReward: MINING_REWARD,
-        address: minerWallet.address,
-      },
-    ], blockchain, gas);
+  static rewardTransaction(
+    minerWallet,
+    blockchainWallet,
+    blockchain,
+    transactionPool,
+    gas
+  ) {
+    let transaction = blockchainWallet.createTransaction(
+      blockchainWallet,
+      minerWallet.address,
+      BigInt(MINING_REWARD),
+      blockchain,
+      transactionPool,
+      BigInt(gas)
+    );
+    return transaction;
   }
 
   // faucet reward
-  static faucetTransaction(recipient, faucetWallet, blockchain, gas) {
-
-    faucetWallet.balance -= FAUCET_REWARD;
-    return Transaction.transactionWithOutputs(faucetWallet, [
-      {
-        faucetReward: FAUCET_REWARD,
-        address: recipient.address,
-      },
-    ], blockchain, gas);
+  static faucetTransaction(recipient, faucetWallet, blockchain, transactionPool, gas) {
+    let transaction = faucetWallet.createTransaction(
+      faucetWallet,
+      recipient,
+      BigInt(FAUCET_REWARD),
+      blockchain,
+      transactionPool,
+      BigInt(gas)
+    );
+    return transaction;
   }
-
 }
 
 module.exports = Transaction;
 
-
+// senderWallet, recipient, amount, blockchain, transactionPool, gas

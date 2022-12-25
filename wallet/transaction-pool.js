@@ -1,5 +1,4 @@
-const { compressPublicKey } = require("../chain-util");
-const Transaction = require("./transaction");
+const Transaction = require('./transaction');
 
 class TransactionPool {
   constructor() {
@@ -36,30 +35,32 @@ class TransactionPool {
     // valid if total outputs equal inputs and signatures are the same
   
     return this.transactions.filter((transaction) => {
-      if(transaction.input.address === "faucet-wallet"){
+      if(transaction.input.address === "faucet-wallet" || transaction.input.address === "blockchain-reward-wallet"){
         transaction.transferSuccessful = true;
         return transaction;
       }
 
-      let inputAmount = 0;
-      let outputTotal = 0;
+      let inputAmount = BigInt(0);
+      let outputTotal = BigInt(0);
 
       for(let i = 0; i < transaction.outputs.length; i++){
         let currOutput = transaction.outputs[i];
         // console.log(currOutput);
         if(currOutput.newSenderBalance){
           // console.log(currOutput);
-          inputAmount = currOutput.newSenderBalance;
+          inputAmount = BigInt(currOutput.newSenderBalance);
         } else{
           // console.log(currOutput);
-          outputTotal += (currOutput.sentAmount + currOutput.gas);
+          outputTotal += BigInt(currOutput.sentAmount) + BigInt(currOutput.gas);
         }
 
       }
 
       // console.log(outputTotal);
 
-      if (transaction.input.senderBalance  !== inputAmount + outputTotal) {
+      if (BigInt(transaction.input.senderBalance)  !== BigInt(inputAmount + outputTotal)) {
+        console.log(BigInt(transaction.input.senderBalance));
+        console.log(BigInt(inputAmount), BigInt(outputTotal));
         console.log(`Invalid transaction (input/output) from ${transaction.input.address}`);
         return;
       }

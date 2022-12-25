@@ -10,12 +10,14 @@ const Transaction = require("../wallet/transaction");
 const TransactionPool = require("../wallet/transaction-pool");
 const Miner = require("./miner");
 const ChainUtil = require("../chain-util");
+const {} = require("../config");
 
 // get port from user or set the default port
 const HTTP_PORT = process.env.HTTP_PORT || 3001;
 
 // create server
 const app = express();
+process.on('warning', e => console.warn(e.stack));
 
 // set up body parser
 app.use(bodyParser.json());
@@ -23,18 +25,16 @@ app.use(bodyParser.json());
 // create a blockchain, and transactionPool instance
 var blockchain = new Blockchain();
 const transactionPool = new TransactionPool();
-var wallet = new Wallet(5555);
+var wallet = new Wallet(BigInt(5555));
 
 // create p2p server instance and start it
 const peers = new Peers(blockchain, transactionPool, wallet);
 peers.listen();
-
+// console.log(peers.toString());
 
 // add wallet to storage
 wallet.pushIt(blockchain, peers);
 blockchain.replaceWallets(blockchain.wallets);
-
-
 
 // create miner instance using all the above
 const miner = new Miner(
@@ -93,10 +93,10 @@ app.post("/transact", (req, res) => {
   const transaction = wallet.createTransaction(
     wallet,
     recipient,
-    amount,
+    BigInt(amount),
     blockchain,
     transactionPool,
-    gas
+    BigInt(gas)
   );
   // console.log("transaction", transaction);
   peers.broadcastTransaction(transaction);
@@ -156,17 +156,37 @@ app.post("/wallet/new", (req, res) => {
 // ======= faucet =======
 app.post("/faucet", (req, res) => {
   let transaction = Transaction.faucetTransaction(
-    wallet,
-    faucetWallet,
+    wallet.address,
+    blockchain.faucetWallet,
     blockchain,
-    0
+    transactionPool,
+    BigInt(0)
   );
-  transactionPool.transactions.push(transaction);
+  // transactionPool.transactions.push(transaction);
   peers.broadcastTransaction(transaction);
   res.json("Waiting for block to be mined...");
 });
+
+// ======= peers =======
+
+app.get("/peers/info", (req, res) => {
+  res.json(peers.info());
+});
+
+
+// =======================================================================
+// ======== API END ========
+// =======================================================================
+
 
 // server config
 app.listen(HTTP_PORT, () => {
   console.log(`listening on port ${HTTP_PORT}`);
 });
+
+
+// test
+
+// let bigNum = BigInt(5000000000000);
+// let bigNum2 = BigInt(2222222);
+// console.log((bigNum + bigNum2) + "");

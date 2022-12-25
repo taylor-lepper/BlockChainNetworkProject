@@ -29,3 +29,7 @@ To connect to the 3rd server
 To connect to the 4th server
     -run this command in bash terminal in project folder (notice extra peers and different ports)
     HTTP_PORT=3004 P2P_PORT=5004 PEERS=ws://localhost:5003,ws://localhost:5002,ws://localhost:5001 npm run dev
+
+
+    ================== Trace Warnings =======================
+    npx cross-env NODE_OPTIONS="--trace-warnings" npm run dev

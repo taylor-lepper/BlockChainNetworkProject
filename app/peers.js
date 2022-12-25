@@ -2,6 +2,8 @@ const Wallet = require("../wallet/index");
 const WebSocket = require("ws");
 const ChainUtil = require("../chain-util");
 
+BigInt.prototype.toJSON = function() { return this.toString() }
+
 // peer to peer server port (user given or default)
 const P2P_PORT = process.env.P2P_PORT || 5001;
 
@@ -27,16 +29,35 @@ class Peers {
     this.peers = peers;
     this.wallets = this.blockchain.wallets;
     this.wallet = wallet;
+    this.server = new WebSocket.Server({ port: P2P_PORT });
+  }
+
+
+  toString() {
+    return `Node -
+        id          : ${this.id}
+        peers       : ${this.peers}
+        port        : ${this.server.options.port}`;
+  }
+
+  info() {
+    const node = {
+      id: this.id,
+      peers: this.peers,
+      port: this.server.options.port
+    }
+
+    
+    return node;
   }
 
   // create the p2p server and its connections
-
   listen() {
-    const server = new WebSocket.Server({ port: P2P_PORT });
+    // console.log(this.server);
 
     // event listener and callback function
-    // on any new connetion  the current chain will be sent to the new connected peer
-    server.on("connection", (socket) => this.connectSocket(socket));
+    // on any new connetion the current chain and wallets will be sent to the new connected peer
+    this.server.on("connection", (socket) => this.connectSocket(socket));
 
     // to connect to the peers that we have specified
     this.connectToPeers();
@@ -53,16 +74,18 @@ class Peers {
     this.messageHandler(socket);
 
     // on new connection send the chain/wallets to the peer
-
     this.sendChain(socket);
     this.syncWallets();
   }
 
+  
   connectToPeers() {
     // connect to each peer
     peers.forEach((peer) => {
       // create a socket for each
       const socket = new WebSocket(peer);
+      console.log("peer", peer);
+      
 
       // event listener is emitted when connection successful
       // save the socket in the array

@@ -8,7 +8,7 @@ const Peers = require("../app/peers");
 class Blockchain {
   constructor() {
     this.faucetWallet = Wallet.faucetWallet();
-    this.faucetWallet.balance = FAUCET_TRANSACTION.amount;
+    // this.faucetWallet.balance = FAUCET_TRANSACTION.amount;
     this.chain = [Block.genesis(FAUCET_TRANSACTION)];
     this.blockchainWallet = Wallet.blockchainWallet();
     this.wallets = [this.blockchainWallet, this.faucetWallet];

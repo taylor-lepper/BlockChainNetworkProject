@@ -6,7 +6,7 @@ const Peers = require("../app/peers");
 class Wallet {
   constructor(balance, name) {
     this.name = name || ChainUtil.randomNameGenerator();
-    this.balance = balance;
+    this.balance = BigInt(balance);
     this.keyPair = ChainUtil.genKeyPair();
     this.privateKey = "0x" + this.keyPair.getPrivate("hex");
     this.publicKey = "0x" + this.keyPair.getPublic().encode("hex");
@@ -37,20 +37,20 @@ class Wallet {
   }
 
   static blockchainWallet() {
-    const blockchainWallet = new this(1000000000000, "Mining Rewards Wallet from Genesis");
+    const blockchainWallet = new this(BigInt(1000000000000), "Mining Rewards Wallet from Genesis");
     blockchainWallet.address = "blockchain-reward-wallet";
     return blockchainWallet;
   }
 
   static faucetWallet() {
-    const faucetWallet = new this(99999999999999, "Faucet Wallet ");
+    const faucetWallet = new this(BigInt(99999999999), "Faucet Wallet ");
     faucetWallet.address = "faucet-wallet";
     return faucetWallet;
   } 
 
   createTransaction(senderWallet, recipient, amount, blockchain, transactionPool, gas) {
     // this.balance = this.calculateBalance(blockchain);
-
+    amount = BigInt(amount);
     if (amount > senderWallet.balance) {
       console.log(`Amount ${amount} exceeds the current balance: ${senderWallet.balance}`);
       return;

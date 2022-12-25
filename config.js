@@ -1,22 +1,22 @@
-const DIFFICULTY = 3;
+const DIFFICULTY = 4;
 
 // milliseconds
 const MINE_RATE = 3000;
 
-const MICRO_COIN = 1;
-const MILLI_COIN = MICRO_COIN * 1000;
-const COIN = MILLI_COIN * 1000;
+const MICRO_COIN = BigInt(1);
+const MILLI_COIN = MICRO_COIN * BigInt(1000);
+const COIN = MILLI_COIN * BigInt(1000);
 
-const MINIMUM_TRANSACTION_FEE = 10 * MICRO_COIN;
-const INITIAL_BALANCE = 1000000000000000 * MICRO_COIN;
+const MINIMUM_TRANSACTION_FEE = BigInt(10) * MICRO_COIN;
+const INITIAL_BALANCE = BigInt(1000000000000000) * MICRO_COIN;
 
-const MINING_REWARD = 5000000 * MICRO_COIN;
-const FAUCET_REWARD = 5000000 * MICRO_COIN;
+const MINING_REWARD = BigInt(5000000) * MICRO_COIN;
+const FAUCET_REWARD = BigInt(5000000) * MICRO_COIN;
 
 const FAUCET_TRANSACTION = {
     "from": "blockchain-reward-wallet",
     "to": "faucet-wallet",
-    "amount": 9999999999999,
+    "amount": BigInt(9999999999999),
     "gas": 0,
     "dateCreated": "Genesis-Chapter2",
     "senderPubKey": "0x00",

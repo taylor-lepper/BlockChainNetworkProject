@@ -19,7 +19,7 @@ class Miner {
    
     if (validTransactions) {
       validTransactions.push(
-        Transaction.rewardTransaction(this.wallet, this.blockchainWallet, this.blockchain, 0)
+        Transaction.rewardTransaction(this.wallet, this.blockchainWallet, this.blockchain, this.transactionPool, BigInt(0))
       );
       // console.log(validTransactions);
 
