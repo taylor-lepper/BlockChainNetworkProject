@@ -47,11 +47,11 @@ class Blockchain {
     console.log("Resetting the current wallets");
     newWallets.forEach(wallet =>{
       if(wallet.address === "blockchain-reward-wallet"){
-        wallet.balance = 1000000000000; 
+        wallet.balance = BigInt(1000000000000); 
       } else if( wallet.address === "faucet-wallet"){
-        wallet.balance = 9999999999999;
+        wallet.balance = BigInt(9999999999999);
       } else{
-        wallet.balance = 0;
+        wallet.balance = BigInt(0);
       }
       this.wallets.push(wallet);
     });
