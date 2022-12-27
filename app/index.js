@@ -1,3 +1,6 @@
+// debug help
+process.on("warning", (e) => console.warn(e.stack));
+
 // packages
 const express = require("express");
 const bodyParser = require("body-parser");
@@ -14,17 +17,15 @@ const {} = require("../config");
 
 // get port from user or set the default port
 const HTTP_PORT = process.env.HTTP_PORT || 3001;
+const HOST = process.env.HOST || "127.0.0.1";
 
 // create server
 const app = express();
-process.on('warning', e => console.warn(e.stack));
-
-// set up body parser
 app.use(bodyParser.json());
 
 // create a blockchain, and transactionPool instance
 var blockchain = new Blockchain();
-const transactionPool = new TransactionPool();
+const transactionPool = new TransactionPool(blockchain);
 var wallet = new Wallet(BigInt(5555));
 
 // create p2p server instance and start it
@@ -41,17 +42,24 @@ const miner = new Miner(
   blockchain,
   transactionPool,
   wallet,
-  peers,
-  blockchain.blockchainWallet
+  peers
 );
+
 // =======================================================================
 // ======== API ========
 // =======================================================================
 
-// ======= blocks/chain api =======
-app.get("/blockchain", (req, res) => {
-  res.json(blockchain.chain);
+// ======= get IP api ======
+app.get("/ip", (req, res) => {
+  let ipAddr = req.socket.remoteAddress;
+  res.json({ ipAddr });
 });
+
+// ======= blocks/chain api =======
+app.route('/blockchain')
+  .get((req, res) =>  res.json(blockchain.chain))
+  .post((req, res) =>  res.json(blockchain.chain));
+
 
 app.get(`/blockchain/:index`, (req, res) => {
   res.json(blockchain.chain[req.params.index]);
@@ -78,15 +86,53 @@ app.post("/mine", (req, res) => {
 app.post("/mine-transactions", (req, res) => {
   const block = miner.mine();
   //   console.log(`New block added: ${block.toString()}`);
+  // res.json(blockchain.chain);
   res.redirect("/blockchain");
 });
 
 // ======= transactions api =======
-app.get("/transactions", (req, res) => {
-  res.json(transactionPool.transactions);
+app.route('/transactions/pending')
+  .get((req, res) =>   res.json(transactionPool.transactions))
+  .post((req, res) =>   res.json(transactionPool.transactions));
+
+app.get("/transactions/confirmed", (req, res) => {
+  const confirmedFound = blockchain.findConfirmedTransactions();
+  const confirmedTransactions = {
+    info: "These transactions are from the blockchain",
+    quantity: confirmedFound.length,
+    confirmedTransactions: confirmedFound,
+  };
+  res.json(confirmedTransactions);
 });
 
-app.post("/transact", (req, res) => {
+app.get("/transactions/hash/:hash", (req, res) => {
+  const hashToFind = req.params.hash;
+  // console.log(hashToFind);
+  const hashFound = blockchain.findTransactionByHash(hashToFind);
+  res.json(hashFound);
+});
+
+app.get("/transactions/address/:address", (req, res) => {
+  const addressToFind = req.params.address;
+  console.log(addressToFind);
+  const transactionsFound = blockchain.findTransactionByAddress(addressToFind);
+  const pendingFound =
+    transactionPool.findTransactionPoolByAddress(addressToFind);
+  res.json([
+    {
+      info: "These transactions are from the blockchain",
+      quantity: transactionsFound.length,
+      confirmedTransactions: transactionsFound,
+    },
+    {
+      info: "These transactions have not been mined yet",
+      quantity: pendingFound.length,
+      pendingTransactions: pendingFound,
+    },
+  ]);
+});
+
+app.post("/transactions/create", (req, res) => {
   const { recipient, amount, gas } = req.body;
   // console.log(recipient, amount, gas);
 
@@ -100,12 +146,12 @@ app.post("/transact", (req, res) => {
   );
   // console.log("transaction", transaction);
   peers.broadcastTransaction(transaction);
-  res.redirect("/transactions");
+  res.redirect("/transactions/pending");
 });
 
 // ======= wallet api =======
 app.get("/wallet", (req, res) => {
-  let matchingWallet = wallets.filter(
+  let matchingWallet = blockchain.wallets.filter(
     (walletInArr) => walletInArr.address === wallet.address
   );
   if (matchingWallet) {
@@ -173,16 +219,25 @@ app.get("/peers/info", (req, res) => {
   res.json(peers.info());
 });
 
+app.get("/peers/debug", (req, res) => {
+  res.json(peers.debug(blockchain.wallets));
+});
+
+// ======= 404 ======
 
 // =======================================================================
 // ======== API END ========
 // =======================================================================
 
-
 // server config
-app.listen(HTTP_PORT, () => {
-  console.log(`listening on port ${HTTP_PORT}`);
+
+var server = app.listen(HTTP_PORT, HOST, () => {
+  var host = server.address().address;
+  var port = server.address().port;
+  // console.log(host, port);
+  console.log(`Listening on http://${host}:${HTTP_PORT}`);
 });
+
 
 
 // test
@@ -190,3 +245,6 @@ app.listen(HTTP_PORT, () => {
 // let bigNum = BigInt(5000000000000);
 // let bigNum2 = BigInt(2222222);
 // console.log((bigNum + bigNum2) + "");
+
+// let date = new Date().toISOString();
+// console.log(date);

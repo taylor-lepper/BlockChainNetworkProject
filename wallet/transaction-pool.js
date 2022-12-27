@@ -74,6 +74,17 @@ class TransactionPool {
       return transaction;
     });
   }
+
+  findTransactionPoolByAddress(addressToFind) {
+    let matchingTransactions = [];
+    for(let i = 0; i < this.transactions.length; i++){
+      let currentTrans = this.transactions[i];
+      if(currentTrans.outputs[0].address === addressToFind || currentTrans.outputs[1].address === addressToFind){
+        matchingTransactions.push(currentTrans);
+      }
+    }
+    return matchingTransactions.sort((a, b) => a.input.dateCreated > b.input.dateCreated ? 1 : -1);
+  }
 }
 
 module.exports = TransactionPool;

@@ -6,13 +6,13 @@ const { DIFFICULTY, MINE_RATE } = require("../config");
 class Block {
   constructor(index, transactions, difficulty, prevBlockHash, minedBy, blockDataHash, nonce, dateCreated, blockHash) {
     this.index = index;
-    this.difficulty = difficulty || DIFFICULTY;
+    this.blockHash = blockHash;
     this.prevBlockHash = prevBlockHash;
+    this.difficulty = difficulty || DIFFICULTY;
     this.minedBy = minedBy;
     this.blockDataHash = blockDataHash;
     this.nonce = nonce;
     this.dateCreated = dateCreated;
-    this.blockHash = blockHash;
     this.transactions = transactions;
   }
 
@@ -28,7 +28,7 @@ class Block {
   }
 
   static genesis(faucetTransaction) {
-    return new this(0, [faucetTransaction], 0, "yesterdays-hashBrowns", `GOD-MINER`, "blockHashBrowns", 0, "Genesis-Chapter-1", "0006bae266e1018da7a9a85ad52eb77e705bcac91f511c4f76dc5ee39efc1b96");
+    return new this(0, [faucetTransaction], 0, "0x00", `GOD-MINER`, "blockDataHashBrowns", 0, "1991-10-01T00:00:00.000Z", "xxxxGENESISxxxxBLOCKxxxxGENESISxxxxBLOCKxxxxGENESISxxxxBLOCKxxxx");
   }
 
   static blockHash(index, transactions, difficulty, prevBlockHash, minedBy) {
@@ -56,7 +56,7 @@ class Block {
     do {
 
       _nonce++;
-      dateCreated = Date.now();
+      dateCreated = new Date().toISOString();
       difficulty = Block.adjustDifficulty(lastBlock, dateCreated);
       hash = Block.hash(dateCreated, prevBlockHash, transactions, _nonce, difficulty);
       // check if we have the right # of zeros (P.O.W)
@@ -81,3 +81,5 @@ class Block {
 }
 
 module.exports = Block;
+
+

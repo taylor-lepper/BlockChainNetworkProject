@@ -4,7 +4,6 @@ const { FAUCET_TRANSACTION } = require("../config");
 const Transaction = require("../wallet/transaction");
 const Peers = require("../app/peers");
 
-
 class Blockchain {
   constructor() {
     this.faucetWallet = Wallet.faucetWallet();
@@ -12,14 +11,14 @@ class Blockchain {
     this.chain = [Block.genesis(FAUCET_TRANSACTION)];
     this.blockchainWallet = Wallet.blockchainWallet();
     this.wallets = [this.blockchainWallet, this.faucetWallet];
+    this.miningPool = [];
   }
 
-  
   updateWallets(newWallets) {
     // console.log("newWallets");
     // console.log(newWallets);
     // console.log("newWallets end");
-    if(newWallets.length > 0){
+    if (newWallets.length > 0) {
       newWallets.forEach((wallet) => this.wallets.push(wallet));
     }
     const uniqueIds = [];
@@ -37,27 +36,26 @@ class Blockchain {
     // console.log(this.wallets);
   }
 
-  replaceWallets(newWallets){
+  replaceWallets(newWallets) {
     console.log("Adding the current wallets with old ones");
     this.updateWallets(newWallets);
   }
 
-  resetWallets(newWallets){
+  resetWallets(newWallets) {
     this.wallets = [];
     console.log("Resetting the current wallets");
-    newWallets.forEach(wallet =>{
-      if(wallet.address === "blockchain-reward-wallet"){
-        wallet.balance = BigInt(1000000000000); 
-      } else if( wallet.address === "faucet-wallet"){
+    newWallets.forEach((wallet) => {
+      if (wallet.address === "blockchain-reward-wallet") {
+        wallet.balance = BigInt(1000000000000);
+      } else if (wallet.address === "faucet-wallet") {
         wallet.balance = BigInt(9999999999999);
-      } else{
+      } else {
         wallet.balance = BigInt(0);
       }
       this.wallets.push(wallet);
     });
     console.log("new ones", this.wallets);
   }
-
 
   addBlock(transactions, minedBy) {
     const block = Block.mineBlock(
@@ -82,18 +80,17 @@ class Blockchain {
     for (let i = 1; i < chain.length; i++) {
       const block = chain[i];
       const lastBlock = chain[i - 1];
-      const { dateCreated, prevBlockHash, transactions, nonce, difficulty } =
+      const { index, transactions, difficulty, prevBlockHash, minedBy } =
         block;
+      
+      const hash = Block.blockHash(
+        index, transactions, difficulty, prevBlockHash, minedBy
+      );
+      // console.log(block.blockDataHash);
+      // console.log(hash);
       if (
         block.prevBlockHash !== lastBlock.blockHash ||
-        block.blockHash !==
-          Block.hash(
-            dateCreated,
-            prevBlockHash,
-            transactions,
-            nonce,
-            difficulty
-          )
+        block.blockDataHash !== hash
       ) {
         return false;
       }
@@ -116,6 +113,78 @@ class Blockchain {
 
   resetChain(chain) {
     this.chain = chain;
+  }
+
+  calculateCumulativeDifficulty(){
+    let counter = 0;
+    for(let i = 0; i < this.chain.length; i++){
+      let currBlock = this.chain[i];
+      counter += currBlock.difficulty;
+    }
+    return counter;
+  }
+
+  calculateConfirmedTransactions(){
+    let counter = 0;
+    for(let i = 1; i < this.chain.length; i++){
+      let currBlock = this.chain[i];
+      counter += currBlock.transactions.length;
+    }
+    return counter;
+  }
+
+  findTransactionByAddress(addressToFind) {
+    let matchingTransactions = [];
+    for (let i = 1; i < this.chain.length; i++) {
+      let currTransactions = this.chain[i].transactions;
+      // console.log(currTransactions);
+      for (let i = 0; i < currTransactions.length; i++) {
+        let transaction = currTransactions[i];
+        // console.log(transaction);
+        if (
+          transaction.outputs[0].address === addressToFind ||
+          transaction.outputs[1].address === addressToFind
+        ) {
+          // console.log("matching address");
+          matchingTransactions.push(transaction);
+        }
+      }
+    }
+    return matchingTransactions.sort((a, b) =>
+      a.input.dateCreated > b.input.dateCreated ? 1 : -1
+    );
+  }
+
+  findConfirmedTransactions() {
+    let transactionsList = [];
+    for (let i = 1; i < this.chain.length; i++) {
+      let currTransactions = this.chain[i].transactions;
+      // console.log(currTransactions);
+      for (let i = 0; i < currTransactions.length; i++) {
+        let transaction = currTransactions[i];
+        // console.log(transaction);
+        transactionsList.push(transaction);
+      }
+    }
+    return transactionsList.sort((a, b) =>
+      a.input.dateCreated > b.input.dateCreated ? 1 : -1
+    );
+  }
+
+  findTransactionByHash(hashToFind) {
+    for (let i = 1; i < this.chain.length; i++) {
+      let currTransactions = this.chain[i].transactions;
+      // console.log(currTransactions);
+      for (let i = 0; i < currTransactions.length; i++) {
+        let transaction = currTransactions[i];
+        // console.log(transaction);
+        if (transaction.input.transactionHash === hashToFind) {
+          console.log("matching hash");
+          return transaction;
+        }
+      }
+    }
+    return `No matching transaction found for hash '${hashToFind}'`;
   }
 }
 

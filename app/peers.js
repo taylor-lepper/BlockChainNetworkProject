@@ -41,12 +41,39 @@ class Peers {
         port        : ${this.server.options.port}`;
   }
 
+  debug(wallets) {
+    let walletsPretty = [];
+    wallets.forEach((wallet) => {
+      walletsPretty.push(ChainUtil.walletPretty(wallet));
+    });
+
+    const info = {
+      about: "TaylorChain/1.0-JavaScript",
+      url: `http://localhost:${P2P_PORT}`,
+      chainId: this.blockchain.chain[0].blockHash,
+      currentPeers: this.peers,
+      wallets: walletsPretty,
+      blockchain: this.blockchain.chain,
+    };
+    return info;
+  }
+
   info() {
     const node = {
-      id: this.id,
-      peers: this.peers,
-      port: this.server.options.port
-    }
+      about: "TaylorChain/1.0-JavaScript",
+      nodeID: this.id,
+      nodeURL: this.url,
+      chainId: this.blockchain.chain[0].blockHash,
+      port: this.server.options.port,
+      peers: this.peers.length,
+      currentPeers: this.peers,
+      currentDifficulty:
+        this.blockchain.chain[this.blockchain.chain.length - 1].difficulty,
+      cumulativeDifficulty: this.blockchain.calculateCumulativeDifficulty(),
+      blocksCount: this.blockchain.chain.length,
+      confirmedTransactions: this.blockchain.calculateConfirmedTransactions(),
+      pendingTransactions: this.transactionPool.transactions.length,
+    };
     return node;
   }
 

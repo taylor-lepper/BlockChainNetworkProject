@@ -4,18 +4,21 @@ const Transaction = require("../wallet/transaction");
 
 
 class Miner {
-  constructor(blockchain, transactionPool, wallet, peers, blockchainWallet) {
+  constructor(blockchain, transactionPool, wallet, peers) {
     this.blockchain = blockchain;
     this.transactionPool = transactionPool;
     this.wallet = wallet;
     this.peers = peers;
-    this.blockchainWallet = blockchainWallet;
+    this.blockchainWallet = this.blockchain.blockchainWallet;
   }
 
   mine() {
     // create reward transaction and add to transaction pool
     const validTransactions = this.transactionPool.validTransactions();
     // console.log("blockchain wallet address " + blockchainWallet.address);
+
+    const index = this.blockchain.chain.length;
+    console.log(index);
    
     if (validTransactions) {
       validTransactions.push(
@@ -23,6 +26,10 @@ class Miner {
       );
       // console.log(validTransactions);
 
+      validTransactions.forEach(transaction => {
+        transaction.minedInBlockIndex = index;
+        transaction.transferSuccessful = true;
+      });
       // create new block with those transactions
       const block = this.blockchain.addBlock(validTransactions, this.wallet.address);
     

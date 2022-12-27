@@ -50,7 +50,6 @@ class Wallet {
 
   createTransaction(senderWallet, recipient, amount, blockchain, transactionPool, gas) {
     // this.balance = this.calculateBalance(blockchain);
-    amount = BigInt(amount);
     if (amount > senderWallet.balance) {
       console.log(`Amount ${amount} exceeds the current balance: ${senderWallet.balance}`);
       return;
@@ -60,14 +59,13 @@ class Wallet {
     if (transaction) {
       // adds to existing outputs
       console.log("existing transaction to update");
-      transaction.update(this, recipient, amount, gas);
+      transaction.update(this, recipient, amount, blockchain, gas);
     } else {
       // creates new transaction and updates the transaction pool
 
       transaction = Transaction.newTransaction(senderWallet, recipient, amount, blockchain, gas);
       //   console.log(transaction);
       transactionPool.updateOrAddTransaction(transaction);
-      //   console.log("update or add transaction should be fired");
     }
     return transaction;
   }
@@ -123,84 +121,6 @@ class Wallet {
     return balance;
   }
 
-
-
-  // updateBalance(blockchain) {
-  //   let blocks = blockchain.chain;
-
-  //   blocks.forEach((block) => {
-  //     let data = block.data;
-  //     if (data) {
-  //       //  console.log(`data ${data}`);
-  //       if (data.length < 2) {
-  //         // ===== no transactions only a miner reward =====
-  //         data.forEach((trans) => {
-  //           // console.log(trans);
-  //           let minerOutputs = trans.outputs[0];
-  //           // console.log(`minerOutputs ${minerOutputs}`);
-  //           let miningReward = minerOutputs.amount;
-  //           let minerAddress = minerOutputs.address;
-  //           // console.log(`miningReward ${miningReward}`);
-  //           // console.log(`minerAddress ${minerAddress}`);
-
-  //           // TODO: update mining wallet balance
-  //           console.log(this);
-  //           // let minerWallet = this.allWallets.find(
-  //           //   (wallet) => wallet.publicKey === minerAddress
-  //           // );
-
-  //           // console.log("minerWallet " + minerWallet);
-  //         });
-  //       } else {
-  //         // ===== there has been 1 or more transactions =====
-
-  //         // ===== update the miners balance =====
-  //         let minerTransaction = data[data.length - 1];
-  //         // console.log(`minerTransaction ${minerTransaction}`);
-  //         let { outputs } = minerTransaction;
-  //         // console.log(`outputs ${outputs}`);
-
-  //         outputs.forEach((output) => {
-  //           // console.log(output);
-  //           let miningReward = output.amount;
-  //           let minerAddress = output.address;
-  //           // console.log(`miningReward ${miningReward}`);
-  //           // console.log(`minerAddress ${minerAddress}`);
-
-  //           // TODO: update mining wallet balance
-
-  //         });
-
-  //         // ===== update each account balance in transactions =====
-
-  //         for (let i = 0; i < data.length - 1; i++) {
-  //           let currentTransaction = data[i];
-  //           // console.log(currentTransaction);
-  //           let outputs = currentTransaction.outputs;
-  //           // console.log(outputs);
-
-  //           // ----- get the sender info -----
-  //           let senderObject = outputs[0];
-  //           // console.log(senderObject);
-  //           let senderAmount = senderObject.amount;
-  //           let senderAddress = senderObject.address;
-  //           // console.log(senderAddress, senderAmount);
-
-  //           // TODO - update the sender info
-
-  //           // ----- get the recipient info -----
-  //           let recipientObject = outputs[1];
-  //           // console.log(recipientObject);
-  //           let recipientAmount = recipientObject.amount;
-  //           let recipientAddress = recipientObject.address;
-  //           // console.log(recipientAddress, recipientAmount);
-
-  //           // TODO - update the recipient info
-  //         }
-  //       }
-  //     }
-  //   });
-  // }
 }
 
 module.exports = Wallet;
