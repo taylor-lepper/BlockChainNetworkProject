@@ -70,7 +70,6 @@ class TransactionPool {
         return;
       }
       // console.log(transaction);
-      transaction.transferSuccessful = true;
       return transaction;
     });
   }

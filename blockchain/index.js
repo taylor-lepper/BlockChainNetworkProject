@@ -1,8 +1,6 @@
 const Block = require("./block");
 const Wallet = require("../wallet/index");
-const { FAUCET_TRANSACTION } = require("../config");
-const Transaction = require("../wallet/transaction");
-const Peers = require("../app/peers");
+const { FAUCET_TRANSACTION, DIFFICULTY } = require("../config");
 
 class Blockchain {
   constructor() {
@@ -11,6 +9,7 @@ class Blockchain {
     this.chain = [Block.genesis(FAUCET_TRANSACTION)];
     this.blockchainWallet = Wallet.blockchainWallet();
     this.wallets = [this.blockchainWallet, this.faucetWallet];
+    this.cumulativeDifficulty = DIFFICULTY;
     this.miningPool = [];
   }
 
@@ -37,7 +36,7 @@ class Blockchain {
   }
 
   replaceWallets(newWallets) {
-    console.log("Adding the current wallets with old ones");
+    console.log("Syncing all wallets");
     this.updateWallets(newWallets);
   }
 
@@ -65,6 +64,7 @@ class Blockchain {
     );
     this.chain.push(block);
     console.log("chain " + this.chain + "\n");
+    this.cumulativeDifficulty = this.calculateCumulativeDifficulty();
     return block;
   }
 
@@ -73,7 +73,7 @@ class Blockchain {
       JSON.stringify(chain[0]) !==
       JSON.stringify(Block.genesis(FAUCET_TRANSACTION))
     ) {
-      console.log("bad genesis");
+      console.log("Invalid chain (Genesis");
       return false;
     }
 
@@ -92,6 +92,7 @@ class Blockchain {
         block.prevBlockHash !== lastBlock.blockHash ||
         block.blockDataHash !== hash
       ) {
+        console.log("Invalid chain (Hashes)");
         return false;
       }
     }
@@ -99,8 +100,8 @@ class Blockchain {
   }
 
   replaceChain(newChain) {
-    if (newChain.length <= this.chain.length) {
-      console.log("Recieved chain is not longer than the current chain");
+    if (newChain.cumulativeDifficulty <= this.chain.cumulativeDifficulty) {
+      console.log("Recieved chain has lower cumulativeDifficulty than the current chain");
       return;
     } else if (!this.isValidChain(newChain)) {
       console.log("Recieved chain is invalid");
@@ -119,7 +120,7 @@ class Blockchain {
     let counter = 0;
     for(let i = 0; i < this.chain.length; i++){
       let currBlock = this.chain[i];
-      counter += currBlock.difficulty;
+      counter += 16 ^ (currBlock.difficulty);
     }
     return counter;
   }

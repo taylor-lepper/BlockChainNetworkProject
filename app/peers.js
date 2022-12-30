@@ -2,10 +2,12 @@ const WebSocket = require("ws");
 const ChainUtil = require("../chain-util");
 
 // fix for 64 bit integer sending info
-BigInt.prototype.toJSON = function() { return this.toString() }
+BigInt.prototype.toJSON = function () {
+  return this.toString();
+};
 
 // peer to peer server port (user given or default)
-const P2P_PORT = process.env.P2P_PORT || 5001;
+// const P2P_PORT = process.env.P2P_PORT || 5001;
 
 // list of addresses to connect to
 const peers = process.env.PEERS ? process.env.PEERS.split(",") : [];
@@ -18,103 +20,91 @@ const MESSAGE_TYPE = {
   wallets: "WALLETS",
   wallets_reset: "WALLETS_RESET",
   chain_reset: "CHAIN_RESET",
-  peer: "PEER"
+  peer: "PEER",
+  socket: "SOCKET",
+  pending: "PENDING"
 };
 
 class Peers {
-  constructor(blockchain, transactionPool, wallet) {
+  constructor(blockchain, transactionPool, wallet, port) {
     this.id = ChainUtil.id();
     this.blockchain = blockchain;
     this.transactionPool = transactionPool;
     this.sockets = [];
     this.peers = peers;
+    this.peersMAP = new Map();
     this.wallets = this.blockchain.wallets;
     this.wallet = wallet;
-    this.server = new WebSocket.Server({ port: P2P_PORT });
-    this.port = this.server.options.port;
+    this.port = port? port: process.env.P2P_PORT || 5001;
+    this.cumulativeDifficulty = this.blockchain.cumulativeDifficulty;
+    this.server = new WebSocket.Server({ port: this.port });
+    this.url = `ws://localhost:${this.port}`;
   }
 
   toString() {
     return `Node -
         id          : ${this.id}
         peers       : ${this.peers}
-        port        : ${this.server.options.port}`;
+        port        : ${this.port}`;
   }
-
-  debug(wallets) {
-    let walletsPretty = [];
-    wallets.forEach((wallet) => {
-      walletsPretty.push(ChainUtil.walletPretty(wallet));
+  // called from api
+  disconnect() {
+    this.server.close();
+  }
+ // called from api
+  connect(newPort, currPeers, blockchain, transactionPool, newWallet){
+    const newPeer = new Peers(blockchain, transactionPool, newWallet, newPort);
+    // newPeer.listen();
+    // console.log(newPort, currPeers);
+    
+    currPeers.forEach((peer) => {
+      var socket = new WebSocket(peer);
+      socket.on("open", () => {
+        this.connectSocket(socket);
+      });
     });
-
-    const info = {
-      about: "TaylorChain/1.0-JavaScript",
-      url: `http://localhost:${P2P_PORT}`,
-      chainId: this.blockchain.chain[0].blockHash,
-      currentPeers: this.peers,
-      wallets: walletsPretty,
-      blockchain: this.blockchain.chain,
-    };
-    return info;
+ 
   }
 
-  info() {
-    const node = {
-      about: "TaylorChain/1.0-JavaScript",
-      nodeID: this.id,
-      nodeURL: this.url,
-      chainId: this.blockchain.chain[0].blockHash,
-      port: this.server.options.port,
-      peers: this.peers.length,
-      currentPeers: this.peers,
-      currentDifficulty:
-        this.blockchain.chain[this.blockchain.chain.length - 1].difficulty,
-      cumulativeDifficulty: this.blockchain.calculateCumulativeDifficulty(),
-      blocksCount: this.blockchain.chain.length,
-      confirmedTransactions: this.blockchain.calculateConfirmedTransactions(),
-      pendingTransactions: this.transactionPool.transactions.length,
-    };
-    return node;
-  }
-
-
-  // create the p2p server and its connections
+  // listen on p2p server for connections
   listen() {
-    // console.log(this.server);
-
     // event listener and callback function
-    // on any new connetion the current chain and wallets will be sent to the new connected peer
-    this.server.on("connection", (socket) => this.connectSocket(socket));
-
+    this.server.on("connection", (socket) => {
+      console.log("listen");
+      this.connectSocket(socket);
+    });
+    this.server.on("close", () => this.closeSocket());
     // to connect to the peers that we have specified
     this.connectToPeers();
-    console.log(`Listening for peer to peer connection on port : ${P2P_PORT}`);
+    console.log(`Listening for peer to peer connection on port : ${this.port}`);
   }
 
   // after making a connection to a socket
   connectSocket(socket) {
-    this.sockets.push(socket);
+    console.log("connectSocket");
     console.log("Socket connected");
-    // console.log("sockets", this.sockets);
+    socket.id = ChainUtil.id();
+    this.sockets.push(socket);
     // register a message event listener to the socket
     this.messageHandler(socket);
-   
+
     // on new connection send the chain/wallets/peers to the peer
     this.sendChain(socket);
     this.syncWallets();
     this.syncPeer();
   }
 
-  
+  // after losing a connection to a socket
+  closeSocket() {
+    this.syncSockets(this.id, this.port);
+  }
+
   connectToPeers() {
     // connect to each peer
+    console.log("connectToPeers");
     peers.forEach((peer) => {
-      // create a socket for each
-      const socket = new WebSocket(peer);
-  
- 
-      // event listener is emitted when connection successful
-      // save the socket in the array
+      var socket = new WebSocket(peer);
+
       socket.on("open", () => {
         this.connectSocket(socket);
       });
@@ -122,6 +112,7 @@ class Peers {
   }
 
   messageHandler(socket) {
+    console.log("messageHandler");
     // when message is recieved, execute the callback
     socket.on("message", (message) => {
       const data = JSON.parse(message);
@@ -134,7 +125,6 @@ class Peers {
           break;
         case MESSAGE_TYPE.transaction:
           // add transaction to the pool or replace existing one
-          // console.log(data.transaction);
           this.transactionPool.updateOrAddTransaction(data.transaction);
           break;
         case MESSAGE_TYPE.clear_transactions:
@@ -156,28 +146,48 @@ class Peers {
         case MESSAGE_TYPE.peer:
           // update peers
           const url = `ws://localhost:${data.port}`;
-          if(!this.peers.includes(url)){
+          if (!this.peers.includes(url)) {
             // console.log("no");
             this.peers.push(url);
           }
-         break;
+          this.peersMAP.set(data.id, url);
+          break;
+        case MESSAGE_TYPE.socket:
+          // update peers about closed socket
+          this.peersMAP.delete(data.id);
+          const url2 = `ws://localhost:${data.port}`;
+          if (this.peers.includes(url2)) {
+            // console.log("YES");
+            this.peers.splice(this.peers.indexOf(url2), 1);
+          }
+          this.sockets.pop();
       }
     });
   }
 
-    // send peers to all peers
-    sendPeer(socket, port) {
-      socket.send(
-        JSON.stringify({ type: MESSAGE_TYPE.peer, port })
-      );
-    }
-  
-    // sync peers with all peers
-    syncPeer() {
-      this.sockets.forEach((socket) => {
-        this.sendPeer(socket, this.port);
-      });
-    }
+  // update peers socket disconnected
+  syncSockets(id, port) {
+    this.sockets.forEach((socket) => {
+      this.sendSocket(socket, id, port);
+    });
+  }
+
+  // send socket to close to all peers
+  sendSocket(socket, id, port) {
+    socket.send(JSON.stringify({ type: MESSAGE_TYPE.socket, id, port }));
+  }
+
+  // send peers to all peers
+  sendPeer(socket, port, id) {
+    socket.send(JSON.stringify({ type: MESSAGE_TYPE.peer, port, id }));
+  }
+
+  // sync peers with all peers
+  syncPeer() {
+    this.sockets.forEach((socket) => {
+      this.sendPeer(socket, this.port, this.id);
+    });
+  }
 
   // send chain to all peers
   sendChain(socket) {
@@ -237,6 +247,19 @@ class Peers {
     });
   }
 
+    // send pending to all peers
+    sendPending(socket, transactionPool) {
+      socket.send(
+        JSON.stringify({ type: MESSAGE_TYPE.pending, pending: transactionPool })
+      );
+    }
+  
+    // sync pending with all peers
+    syncPending() {
+      this.sockets.forEach((socket) => {
+        this.sendPending(socket.socket, this.transactionPool);
+      });
+    }
   // tell sockets to reset wallets
   syncWalletsNew(wallets) {
     // console.log(wallets);
@@ -272,6 +295,65 @@ class Peers {
       })
     );
   }
+
+  // info for api
+  debug(wallets) {
+    let walletsPretty = [];
+    wallets.forEach((wallet) => {
+      walletsPretty.push(ChainUtil.walletPretty(wallet));
+    });
+
+    const debugInfo = {
+      about: "TaylorChain/1.0-JavaScript",
+      url: `http://localhost:${P2P_PORT}`,
+      chainId: this.blockchain.chain[0].blockHash,
+      currentPeers: this.peers,
+      wallets: walletsPretty,
+      blockchain: this.blockchain.chain,
+    };
+    return debugInfo;
+  }
+
+  async info() {
+    if(peers.length > 0){
+      const info = {
+        about: "TaylorChain/1.0-JavaScript",
+        nodeID: this.id,
+        nodeURL: this.url,
+        chainId: this.blockchain.chain[0].blockHash,
+        port: this.server.options.port,
+        sockets: this.sockets.length,
+        peers: this.peers.length,
+        currentPeers: this.peers,
+        currentDifficulty:
+          this.blockchain.chain[this.blockchain.chain.length - 1].difficulty,
+        cumulativeDifficulty: this.blockchain.calculateCumulativeDifficulty(),
+        blocksCount: this.blockchain.chain.length,
+        confirmedTransactions: this.blockchain.calculateConfirmedTransactions(),
+        pendingTransactions: this.transactionPool.transactions.length,
+      };
+      return info;
+    }
+    return "There is currently no connected peers";
+  }
+
+  listAll() {
+    return this.peersMAP;
+  }
+
+  listSockets() {
+    let ids = [];
+    this.sockets.forEach(socket =>{
+      ids.push(socket.id);
+    })
+    return ids;
+  }
 }
 
 module.exports = Peers;
+
+// close connection
+// socket.on("close", (code) => {
+//   console.log("socket disconnect code", code);
+//   console.log("Socket disconnected!");
+// });

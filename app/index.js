@@ -4,6 +4,7 @@ process.on("warning", (e) => console.warn(e.stack));
 // packages
 const express = require("express");
 const bodyParser = require("body-parser");
+const { spawn } = require("node:child_process");
 
 // import files locally
 const Blockchain = require("../blockchain");
@@ -22,6 +23,7 @@ const HOST = process.env.HOST || "127.0.0.1";
 // create server
 const app = express();
 app.use(bodyParser.json());
+require("express-async-await")(app);
 
 // create a blockchain, and transactionPool instance
 var blockchain = new Blockchain();
@@ -31,19 +33,13 @@ var wallet = new Wallet(BigInt(5555));
 // create p2p server instance and start it
 const peers = new Peers(blockchain, transactionPool, wallet);
 peers.listen();
-// console.log(peers.toString());
 
 // add wallet to storage
 wallet.pushIt(blockchain, peers);
 blockchain.replaceWallets(blockchain.wallets);
 
 // create miner instance using all the above
-const miner = new Miner(
-  blockchain,
-  transactionPool,
-  wallet,
-  peers
-);
+const miner = new Miner(blockchain, transactionPool, wallet, peers);
 
 // =======================================================================
 // ======== API ========
@@ -56,10 +52,10 @@ app.get("/ip", (req, res) => {
 });
 
 // ======= blocks/chain api =======
-app.route('/blockchain')
-  .get((req, res) =>  res.json(blockchain.chain))
-  .post((req, res) =>  res.json(blockchain.chain));
-
+app
+  .route("/blockchain")
+  .get((req, res) => res.json(blockchain.chain))
+  .post((req, res) => res.json(blockchain.chain));
 
 app.get(`/blockchain/:index`, (req, res) => {
   res.json(blockchain.chain[req.params.index]);
@@ -91,9 +87,10 @@ app.post("/mine-transactions", (req, res) => {
 });
 
 // ======= transactions api =======
-app.route('/transactions/pending')
-  .get((req, res) =>   res.json(transactionPool.transactions))
-  .post((req, res) =>   res.json(transactionPool.transactions));
+app
+  .route("/transactions/pending")
+  .get((req, res) => res.json(transactionPool.transactions))
+  .post((req, res) => res.json(transactionPool.transactions));
 
 app.get("/transactions/confirmed", (req, res) => {
   const confirmedFound = blockchain.findConfirmedTransactions();
@@ -169,7 +166,11 @@ app.get("/wallet/all", (req, res) => {
     wallet = ChainUtil.walletPretty(wallet);
     outPutWallets.push(wallet);
   });
-  res.json({ wallets: outPutWallets });
+  res.json({
+    info: "Info for all Wallets",
+    quantity: outPutWallets.length,
+    Wallets: outPutWallets,
+  });
 });
 
 app.get("/wallet/all/balance", (req, res) => {
@@ -178,7 +179,12 @@ app.get("/wallet/all/balance", (req, res) => {
     wallet = ChainUtil.walletBalance(wallet);
     outPutWallets.push(wallet);
   });
-  res.json({ wallets: outPutWallets });
+
+  res.json({
+    info: "Balances for all Wallets",
+    quantity: outPutWallets.length,
+    Wallets: outPutWallets,
+  });
 });
 
 app.get("/wallet/public-key", (req, res) => {
@@ -215,12 +221,45 @@ app.post("/faucet", (req, res) => {
 
 // ======= peers =======
 
+app.post("/peers/connect", async function (req, res) {
+  const peerInfo = await peers.info();
+  // no peers yet
+  if (typeof peerInfo === "string") {
+    let bat = spawn("cmd.exe", ["/c", "connect.sh"]);
+    res.json("A new terminal has opened! You are now connected!");
+  } else { 
+    // peers exist
+    let length = peerInfo.peers;
+    // console.log(length);
+    let bat = spawn("cmd.exe", ["/c", `connect${length}.sh`]);
+    res.json("A new terminal has opened! You are now connected!");
+  }
+});
+
 app.get("/peers/info", (req, res) => {
   res.json(peers.info());
 });
 
 app.get("/peers/debug", (req, res) => {
   res.json(peers.debug(blockchain.wallets));
+});
+
+app.get("/peers/all", (req, res) => {
+  res.json(Object.fromEntries(peers.listAll()));
+});
+
+app.post("/peers/disconnect", (req, res) => {
+  function killServer() {
+    process.exit(0);
+  }
+  peers.disconnect();
+  res.json(`Peer has been disconnected from port ${peers.port}`);
+  server.close();
+  setTimeout(killServer, 5000);
+});
+
+app.get("/peers/sockets", (req, res) => {
+  res.json(peers.listSockets());
 });
 
 // ======= 404 ======
@@ -232,13 +271,11 @@ app.get("/peers/debug", (req, res) => {
 // server config
 
 var server = app.listen(HTTP_PORT, HOST, () => {
-  var host = server.address().address;
-  var port = server.address().port;
+  const host = server.address().address;
+  const port = server.address().port;
   // console.log(host, port);
-  console.log(`Listening on http://${host}:${HTTP_PORT}`);
+  console.log(`Listening on http://${host}:${port}`);
 });
-
-
 
 // test
 
