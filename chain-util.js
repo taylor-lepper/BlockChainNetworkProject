@@ -75,7 +75,7 @@ class ChainUtil {
     });
   }
 
-  static walletBalance(wallet) {
+  static walletBalancePretty(wallet) {
     const { name, balance, address } = wallet;
     return (wallet = {
       name: name,

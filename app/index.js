@@ -151,16 +151,8 @@ app.post("/transactions/create", (req, res) => {
 
 // ======= wallet api =======
 app.get("/wallet", (req, res) => {
-  let matchingWallet = blockchain.wallets.filter(
-    (walletInArr) => walletInArr.address === wallet.address
-  );
-  if (matchingWallet) {
-    matchingWallet = matchingWallet[0];
-    matchingWallet = ChainUtil.walletPretty(matchingWallet);
-  } else {
-    return res.json({ matchingWallet: "No wallet found" });
-  }
-  res.json({ matchingWallet: matchingWallet });
+  let myWallet = ChainUtil.walletPretty(wallet);
+  res.json({ myWallet });
 });
 
 app.get("/wallet/all", (req, res) => {
@@ -179,7 +171,7 @@ app.get("/wallet/all", (req, res) => {
 app.get("/wallet/all/balance", (req, res) => {
   outPutWallets = [];
   blockchain.wallets.forEach((wallet) => {
-    wallet = ChainUtil.walletBalance(wallet);
+    wallet = ChainUtil.walletBalancePretty(wallet);
     outPutWallets.push(wallet);
   });
 
@@ -199,7 +191,7 @@ app.get("/wallet/address", (req, res) => {
 });
 
 app.get("/wallet/balance", (req, res) => {
-  res.json({ balance: wallet.calculateBalance(blockchain) });
+  res.json({ balance: wallet.calculateBalance(blockchain, transactionPool) });
 });
 
 app.post("/wallet/new", (req, res) => {

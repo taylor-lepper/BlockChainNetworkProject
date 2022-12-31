@@ -14,8 +14,6 @@ class TransactionPool {
   }
 
   updateOrAddTransaction(transaction) {
-    // if transaction exists, save to variable
-    // console.log("inside update or add transaction");
     let existingTrans = this.transactions.find(
       (t) => t.input.transactionHash === transaction.input.transactionHash
     );
@@ -46,20 +44,20 @@ class TransactionPool {
       for(let i = 0; i < transaction.outputs.length; i++){
         let currOutput = transaction.outputs[i];
         // console.log(currOutput);
-        if(currOutput.newSenderBalance){
+        if(currOutput.newSenderSafeBalance){
           // console.log(currOutput);
-          inputAmount = BigInt(currOutput.newSenderBalance);
+          inputAmount = BigInt(currOutput.newSenderSafeBalance);
         } else{
           // console.log(currOutput);
-          outputTotal += BigInt(currOutput.sentAmount) + BigInt(currOutput.gas);
+          outputTotal += currOutput.sentAmount + currOutput.gas;
         }
 
       }
 
       // console.log(outputTotal);
 
-      if (BigInt(transaction.input.senderBalance)  !== BigInt(inputAmount + outputTotal)) {
-        console.log(BigInt(transaction.input.senderBalance));
+      if (BigInt(transaction.input.senderSafeBalance)  !== BigInt(inputAmount + outputTotal)) {
+        console.log(BigInt(transaction.input.senderSafeBalance));
         console.log(BigInt(inputAmount), BigInt(outputTotal));
         console.log(`Invalid transaction (input/output) from ${transaction.input.address}`);
         return;
