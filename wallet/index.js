@@ -1,7 +1,7 @@
-const { INITIAL_BALANCE } = require("../config");
+const { INITIAL_BALANCE, MINIMUM_TRANSACTION_FEE } = require("../config");
 const ChainUtil = require("../chain-util");
 const Transaction = require("./transaction");
-const Peers = require("../app/peers");
+
 
 class Wallet {
   constructor(balance, name) {
@@ -49,6 +49,9 @@ class Wallet {
   } 
 
   createTransaction(senderWallet, recipient, amount, blockchain, transactionPool, gas) {
+    if(amount < MINIMUM_TRANSACTION_FEE){
+      console.log(`Amount ${amount} is less than the minimum transaction amount ${MINIMUM_TRANSACTION_FEE}`);
+    }
     // this.balance = this.calculateBalance(blockchain);
     if (BigInt(amount > senderWallet.balance)) {
       console.log(`Amount ${amount} exceeds the current balance: ${senderWallet.balance}`);
@@ -72,6 +75,7 @@ class Wallet {
 
   calculateBalance(blockchain) {
     let balance = this.balance;
+    console.log("balance beginning ", balance);
 
     let transactions = [];
 
@@ -87,11 +91,12 @@ class Wallet {
       }
     }
 
+    // console.log(transactions);
     // find all transactions matching address
     const walletInputTs = transactions.filter(
-      (transaction) => transaction.input.address === this.address
+      (transaction) => transaction.input.senderAddress === this.address
     );
-
+    console.log(walletInputTs);
     let startTime = 0;
 
     // if any matching transactions, take only most recent input
@@ -103,7 +108,7 @@ class Wallet {
 
       balance = recentInputT.outputs.find(
         (output) => output.address === this.address
-      ).amount;
+      ).newSenderBalance;
       startTime = recentInputT.input.dateCreated;
     }
 
@@ -112,12 +117,12 @@ class Wallet {
       if (transaction.input.dateCreated > startTime) {
         transaction.outputs.find((output) => {
           if (output.address === this.address) {
-            balance += output.amount;
+            balance += output.sentAmount;
           }
         });
       }
     });
-    console.log("balance " + balance);
+    console.log("final balance returned ", balance);
     return balance;
   }
 

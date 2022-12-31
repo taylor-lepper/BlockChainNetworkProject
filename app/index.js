@@ -4,7 +4,10 @@ process.on("warning", (e) => console.warn(e.stack));
 // packages
 const express = require("express");
 const bodyParser = require("body-parser");
-const { spawn } = require("node:child_process");
+var exec = require('child_process').exec;
+var path = require('path');
+var parentDir = path.resolve(process.cwd(), 'shellScripts');
+const asyncHandler = require('express-async-handler');
 
 // import files locally
 const Blockchain = require("../blockchain");
@@ -16,14 +19,14 @@ const Miner = require("./miner");
 const ChainUtil = require("../chain-util");
 const {} = require("../config");
 
-// get port from user or set the default port
+// get port/host from user or set to defaults
 const HTTP_PORT = process.env.HTTP_PORT || 3001;
 const HOST = process.env.HOST || "127.0.0.1";
 
 // create server
 const app = express();
 app.use(bodyParser.json());
-require("express-async-await")(app);
+
 
 // create a blockchain, and transactionPool instance
 var blockchain = new Blockchain();
@@ -221,20 +224,28 @@ app.post("/faucet", (req, res) => {
 
 // ======= peers =======
 
-app.post("/peers/connect", async function (req, res) {
+
+
+app.post("/peers/connect",asyncHandler (async (req, res) =>{
   const peerInfo = await peers.info();
   // no peers yet
   if (typeof peerInfo === "string") {
-    let bat = spawn("cmd.exe", ["/c", "connect.sh"]);
+    exec('connect.sh', {cwd: parentDir}, function (error, stdout, stderr) {
+      // if you also want to change current process working directory:
+      process.chdir(parentDir);
+    });
     res.json("A new terminal has opened! You are now connected!");
   } else { 
     // peers exist
     let length = peerInfo.peers;
     // console.log(length);
-    let bat = spawn("cmd.exe", ["/c", `connect${length}.sh`]);
+    exec(`connect${length}.sh`, {cwd: parentDir}, function (error, stdout, stderr) {
+      // if you also want to change current process working directory:
+      process.chdir(parentDir);
+    });
     res.json("A new terminal has opened! You are now connected!");
   }
-});
+}));
 
 app.get("/peers/info", (req, res) => {
   res.json(peers.info());
