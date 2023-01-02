@@ -45,15 +45,21 @@ class Blockchain {
     console.log("Resetting the current wallets");
     newWallets.forEach((wallet) => {
       if (wallet.address === "blockchain-reward-wallet") {
-        wallet.balance = BigInt(1000000000000);
+        wallet.safeBalance = BigInt(1000000000000);
+        wallet.confirmedBalance = BigInt(1000000000000);
+        wallet.pendingBalance = BigInt(1000000000000);
       } else if (wallet.address === "faucet-wallet") {
-        wallet.balance = BigInt(9999999999999);
+        wallet.safeBalance = BigInt(9999999999999);
+        wallet.confirmedBalance = BigInt(9999999999999);
+        wallet.pendingBalance = BigInt(9999999999999);
       } else {
-        wallet.balance = BigInt(0);
+        wallet.safeBalance = BigInt(0);
+        wallet.confirmedBalance = BigInt(0);
+        wallet.pendingBalance = BigInt(0);
       }
       this.wallets.push(wallet);
     });
-    console.log("new ones", this.wallets);
+    // console.log("new ones", this.wallets);
   }
 
   addBlock(transactions, minedBy) {
@@ -101,13 +107,13 @@ class Blockchain {
 
   replaceChain(newChain) {
     if (newChain.cumulativeDifficulty <= this.chain.cumulativeDifficulty) {
-      console.log("Recieved chain has lower cumulativeDifficulty than the current chain");
+      console.log("Recieved chain has lower cumulativeDifficulty than the current chain\nKeeping current chain.");
       return;
     } else if (!this.isValidChain(newChain)) {
       console.log("Recieved chain is invalid");
       return;
     }
-
+   
     console.log("Replacing the current chain with new chain");
     this.chain = newChain;
   }
@@ -116,6 +122,18 @@ class Blockchain {
     this.chain = chain;
   }
 
+  updateTransactionSafeOrConfirmed(index){
+    if(index > 6){
+      // console.log("must be the 7th");
+      let indexToAdjust = this.chain[this.chain.length -1].index - 6;
+      // console.log(indexToAdjust);
+      let blockTransactionsToAdjust = this.chain[indexToAdjust].transactions;
+      // console.log(blockTransactionsToAdjust);
+      blockTransactionsToAdjust.forEach(transaction => {
+        transaction.outputs[0] = {newSenderSafeBalance: transaction.outputs[0].newSenderConfirmedBalance, address: transaction.outputs[0].address};
+      }); 
+    }
+  }
   calculateCumulativeDifficulty(){
     let counter = 0;
     for(let i = 0; i < this.chain.length; i++){

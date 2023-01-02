@@ -10,7 +10,7 @@ class TransactionPool {
   }
 
   isExistingTransaction(address) {
-    return this.transactions.find((t) => t.input.address === address);
+    return this.transactions.find((t) => t.input.senderAddress === address);
   }
 
   updateOrAddTransaction(transaction) {
@@ -18,9 +18,9 @@ class TransactionPool {
       (t) => t.input.transactionHash === transaction.input.transactionHash
     );
     if (existingTrans) {
-      console.log("matching id in update or add");
+      console.log("matching hash, updating transaction");
       // console.log(transaction.transactionHash);
-      this.transactions[this.transactions.indexOf(transactionWithId)] =
+      this.transactions[this.transactions.indexOf(existingTrans)] =
         transaction;
     } else {
       this.transactions.push(transaction);
@@ -44,21 +44,21 @@ class TransactionPool {
       for(let i = 0; i < transaction.outputs.length; i++){
         let currOutput = transaction.outputs[i];
         // console.log(currOutput);
-        if(currOutput.newSenderSafeBalance){
+        if(currOutput.newSenderPendingBalance){
           // console.log(currOutput);
-          inputAmount = BigInt(currOutput.newSenderSafeBalance);
+          inputAmount = BigInt(currOutput.newSenderPendingBalance);
         } else{
           // console.log(currOutput);
-          outputTotal += currOutput.sentAmount + currOutput.gas;
+          outputTotal +=  BigInt(currOutput.sentAmount) + BigInt(currOutput.gas);
         }
 
       }
 
       // console.log(outputTotal);
 
-      if (BigInt(transaction.input.senderSafeBalance)  !== BigInt(inputAmount + outputTotal)) {
-        console.log(BigInt(transaction.input.senderSafeBalance));
-        console.log(BigInt(inputAmount), BigInt(outputTotal));
+      if (BigInt(transaction.input.senderConfirmedBalance)  !== BigInt(inputAmount + outputTotal)) {
+        console.log(transaction.input.senderConfirmedBalance);
+        console.log(inputAmount, outputTotal);
         console.log(`Invalid transaction (input/output) from ${transaction.input.address}`);
         return;
       }

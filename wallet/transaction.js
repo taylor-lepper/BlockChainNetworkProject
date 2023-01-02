@@ -34,7 +34,7 @@ class Transaction {
       senderWallet,
       [
         {
-          newSenderSafeBalance: senderWallet.safeBalance - amount - gas,
+          newSenderPendingBalance: senderWallet.safeBalance - amount - gas,
           address: senderWallet.address,
         },
         { sentAmount: amount, gas: gas, address: recipient },
@@ -56,8 +56,8 @@ class Transaction {
       return "Not enough balance to create transaction!";
     }
 
-    senderOutput.newSenderSafeBalance =
-      senderOutput.newSenderSafeBalance - amount - gas;
+    senderOutput.newSenderPendingBalance =
+      senderOutput.newSenderPendingBalance - amount - gas;
     this.outputs.push({
       sentAmount: BigInt(amount),
       gas: BigInt(gas),
@@ -83,7 +83,7 @@ class Transaction {
     transaction.input = {
       transactionHash: hash,
       dateCreated: date,
-      senderSafeBalance: senderWallet.safeBalance,
+      senderConfirmedBalance: senderWallet.confirmedBalance,
       senderAddress: senderWallet.address,
       senderPublicKey: senderWallet.publicKey,
       signature: senderWallet.sign(ChainUtil.hash(transaction.outputs)),
@@ -109,10 +109,10 @@ class Transaction {
     let transaction = blockchainWallet.createTransaction(
       blockchainWallet,
       minerWallet.address,
-      MINING_REWARD,
+      BigInt(MINING_REWARD),
       blockchain,
       transactionPool,
-      gas
+      BigInt(gas)
     );
     return transaction;
   }
@@ -128,10 +128,10 @@ class Transaction {
     let transaction = faucetWallet.createTransaction(
       faucetWallet,
       recipient,
-      FAUCET_REWARD,
+      BigInt(FAUCET_REWARD),
       blockchain,
       transactionPool,
-      gas
+      BigInt(gas)
     );
     return transaction;
   }

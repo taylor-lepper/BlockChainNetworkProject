@@ -31,7 +31,7 @@ app.use(bodyParser.json());
 // create a blockchain, and transactionPool instance
 var blockchain = new Blockchain();
 const transactionPool = new TransactionPool(blockchain);
-var wallet = new Wallet(BigInt(5555));
+var wallet = new Wallet(BigInt(10000));
 
 // create p2p server instance and start it
 const peers = new Peers(blockchain, transactionPool, wallet);
@@ -171,6 +171,7 @@ app.get("/wallet/all", (req, res) => {
 app.get("/wallet/all/balance", (req, res) => {
   outPutWallets = [];
   blockchain.wallets.forEach((wallet) => {
+    wallet.calculateBalance(blockchain, transactionPool);
     wallet = ChainUtil.walletBalancePretty(wallet);
     outPutWallets.push(wallet);
   });

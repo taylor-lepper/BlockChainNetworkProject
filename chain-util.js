@@ -59,7 +59,9 @@ class ChainUtil {
   static walletPretty(wallet) {
     const {
       name,
-      balance,
+      safeBalance,
+      confirmedBalance,
+      pendingBalance,
       privateKey,
       publicKey,
       address,
@@ -67,7 +69,9 @@ class ChainUtil {
     } = wallet;
     return (wallet = {
       name: name,
-      balance: balance,
+      safeBalance: safeBalance,
+      confirmedBalance: confirmedBalance,
+      pendingBalance: pendingBalance,
       privateKey: privateKey,
       publicKey: publicKey,
       address: address,
@@ -76,17 +80,20 @@ class ChainUtil {
   }
 
   static walletBalancePretty(wallet) {
-    const { name, balance, address } = wallet;
+    const { name, safeBalance, confirmedBalance, pendingBalance, address } =
+      wallet;
     return (wallet = {
       name: name,
       address: address,
-      balance: balance,
+      safeBalance: safeBalance,
+      confirmedBalance: confirmedBalance,
+      pendingBalance: pendingBalance,
     });
   }
 
   static randomNum() {
     // (Math.random() * (max - min + 1) + min)    (min = 1, max = 15)
-    return Math.floor(Math.random() * (15 - 1  + 1) + 1);
+    return Math.floor(Math.random() * (15 - 1 + 1) + 1);
   }
 
   static randomNameGenerator() {
@@ -105,9 +112,11 @@ class ChainUtil {
       "bearded-dragon",
       "crow",
       "meerkat",
-      "cockroach"
+      "cockroach",
     ];
-    const numbers = [37, 42, 99, 86, 77, 33, 10, 22, 93, 11, 17, 23, 88, 44, 67];
+    const numbers = [
+      37, 42, 99, 86, 77, 33, 10, 22, 93, 11, 17, 23, 88, 44, 67,
+    ];
     const things = [
       "trashcans",
       "pictures",
@@ -123,7 +132,7 @@ class ChainUtil {
       "usb-c-cords",
       "air-guitars",
       "small-origamis",
-      "televion-sets"
+      "televion-sets",
     ];
     const foods = [
       "cheeseburger",
@@ -140,10 +149,12 @@ class ChainUtil {
       "banana-bread",
       "tea",
       "spaghetti-and-a-meat-a-balls",
-      "drunken-noodle"
+      "drunken-noodle",
     ];
-  
-    let name = `${numbers[this.randomNum() -1 ]} ${animals[this.randomNum() -1]} ${foods[this.randomNum()-1]} ${things[this.randomNum()-1]}`;
+
+    let name = `${numbers[this.randomNum() - 1]} ${
+      animals[this.randomNum() - 1]
+    } ${foods[this.randomNum() - 1]} ${things[this.randomNum() - 1]}`;
     return name;
   }
 }

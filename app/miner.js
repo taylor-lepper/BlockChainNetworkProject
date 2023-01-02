@@ -26,14 +26,17 @@ class Miner {
       // console.log(validTransactions);
 
       validTransactions.forEach(transaction => {
+        // console.log(transaction.outputs[0]);
         transaction.minedInBlockIndex = index;
         transaction.transferSuccessful = true;
+        transaction.outputs[0] = {newSenderConfirmedBalance: transaction.outputs[0].newSenderPendingBalance, address: transaction.outputs[0].address};
       });
       // create new block with valid transactions
       const block = this.blockchain.addBlock(validTransactions, this.wallet.address);
     
 
       // broadcast to peers and update chain with new block
+      this.blockchain.updateTransactionSafeOrConfirmed(index);
       this.peers.syncChain();
       this.transactionPool.clear();
       this.peers.broadcastClearTransactions();

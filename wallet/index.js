@@ -28,9 +28,6 @@ class Wallet {
     return this.keyPair.sign(dataHash);
   }
 
-  wallletByPort() {
-    return this.wallet;
-  }
 
   pushIt(blockchain, peers) {
     blockchain.wallets.push(this);
@@ -64,7 +61,7 @@ class Wallet {
       !senderWallet.address === "mining-reward-wallet" ||
       !senderWallet.address === "faucet=wallet"
     ) {
-      if (gas <= MINIMUM_TRANSACTION_FEE) {
+      if (BigInt(gas) <= BigInt(MINIMUM_TRANSACTION_FEE)) {
         console.log(
           `Gas fee "${gas}" is less than the minimum gas fee amount ${MINIMUM_TRANSACTION_FEE}`
         );
@@ -72,9 +69,9 @@ class Wallet {
     }
 
     // this.balance = this.calculateBalance(blockchain);
-    if (BigInt(amount > senderWallet.safeBalance)) {
+    if (BigInt(amount) > BigInt(senderWallet.confirmedBalance)) {
       console.log(
-        `Amount ${amount} exceeds the current balance: ${senderWallet.safeBalance}`
+        `Amount ${amount} exceeds the current balance: ${senderWallet.confirmedBalance}`
       );
       return;
     }
@@ -101,6 +98,7 @@ class Wallet {
   }
 
   calculateBalance(blockchain, transactionPool) {
+    let safeBalance, confirmedBalance, pendingBalance;
     const currBlock = blockchain.chain.length - 1;
     // console.log("currBlock ", currBlock);
 
@@ -108,11 +106,11 @@ class Wallet {
     let confirmedTransactions = [];
     let pendingTransactions = transactionPool.transactions;
 
+
     // get transactions from chain
     for (let i = 1; i < blockchain.chain.length; i++) {
       const block = blockchain.chain[i];
       // console.log(block);
-      if (block.transactions) {
         block.transactions.forEach((transaction) => {
           let currIndex = transaction.minedInBlockIndex;
           // console.log("currIndex ", currIndex);
@@ -120,18 +118,28 @@ class Wallet {
             ? safeTransactions.push(transaction)
             : confirmedTransactions.push(transaction);
         });
-      }
     }
 
-    let safeBalance = this.calculateSafeBalance(safeTransactions);
-    let confirmedBalance = this.calculateConfirmedBalance(
+     safeBalance = this.calculateSafeBalance(safeTransactions);
+     confirmedBalance = this.calculateConfirmedBalance(
       confirmedTransactions
     );
-    let pendingBalance = this.calculatePendingBalance(pendingTransactions);
+    if(pendingTransactions.length === 0){
+      pendingBalance = confirmedBalance;
+      this.pendingBalance = BigInt(confirmedBalance); 
+    } else{
+      pendingBalance = this.calculatePendingBalance(pendingTransactions);
+      this.pendingBalance = BigInt(pendingBalance);
+    }
 
-    // console.log(safeTransactions);
-    // console.log(confirmedTransactions);
-    // console.log(pendingTransactions);
+
+    // console.log("safeTransactions", safeTransactions);
+    // console.log("confirmedTransactions", confirmedTransactions);
+    // console.log("pendingTransactions", pendingTransactions);
+    this.safeBalance = BigInt(safeBalance);
+    this.confirmedBalance = BigInt(confirmedBalance);
+
+    
     return { safeBalance, confirmedBalance, pendingBalance };
   }
 
@@ -149,7 +157,7 @@ class Wallet {
     // if any matching transactions, take only most recent input
     // and set balance to that
     if (safeWalletInputTs.length > 0) {
-      console.log("found one");
+      // console.log("found input");
       const safeRecentInputT = safeWalletInputTs.reduce((prev, current) =>
         prev.input.dateCreated > current.input.dateCreated ? prev : current
       );
@@ -178,8 +186,6 @@ class Wallet {
     let confirmedBalance = this.confirmedBalance;
     console.log("confirmedBalance beginning ", confirmedBalance);
 
-    // console.log("confirmedTransactions ", confirmedTransactions);
-    console.log(this.address);
     // find all transactions matching address
     const confirmedWalletInputTs = confirmedTransactions.filter(
       (transaction) => transaction.input.senderAddress === this.address
@@ -198,12 +204,10 @@ class Wallet {
 
       confirmedBalance = confirmedRecentInputT.outputs.find(
         (output) => output.address === this.address
-      ).newSenderSafeBalance;
+      ).newSenderConfirmedBalance;
       startTime = confirmedRecentInputT.input.dateCreated;
     }
 
-
-    // console.log(startTime);
     // check time stamp, then add valid outputs to balance
     confirmedTransactions.forEach((transaction) => {
       if (transaction.input.dateCreated > startTime) {
@@ -233,14 +237,14 @@ class Wallet {
     // if any matching transactions, take only most recent input
     // and set balance to that
     if (pendingWalletInputTs.length > 0) {
-      console.log("found one");
+      // console.log("found input");
       const pendingRecentInputT = pendingWalletInputTs.reduce((prev, current) =>
         prev.input.dateCreated > current.input.dateCreated ? prev : current
       );
 
       pendingBalance = pendingRecentInputT.outputs.find(
         (output) => output.address === this.address
-      ).newSenderSafeBalance;
+      ).newSenderPendingBalance;
       startTime = pendingRecentInputT.input.dateCreated;
     }
 
