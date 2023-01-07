@@ -35,7 +35,7 @@ class ChainUtil {
   }
 
   static verifySignature(publicKey, signature, dataHash) {
-    console.log(publicKey);
+    // console.log(publicKey);
     publicKey = publicKey.substring(2);
     return ec.keyFromPublic(publicKey, "hex").verify(dataHash, signature);
   }
@@ -157,6 +157,7 @@ class ChainUtil {
     } ${foods[this.randomNum() - 1]} ${things[this.randomNum() - 1]}`;
     return name;
   }
+
 }
 
 // test

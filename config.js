@@ -1,9 +1,8 @@
-const DIFFICULTY = 3;
+const DIFFICULTY = 4>>>0;
 
 // milliseconds
-const MINE_RATE = 3000;
-// transaction limit for block
-const BLOCK_SIZE_LIMIT = 3;
+const MINE_RATE = 7; // seconds
+
 
 const MICRO_COIN = BigInt(1);
 const MILLI_COIN = MICRO_COIN * BigInt(1000);
@@ -20,8 +19,8 @@ const FAUCET_TRANSACTION = {
       "transactionHash": "Genesis-Transaction-Hash",
       "dateCreated": "1991-10-01T00:00:00.000Z",
       "senderSafeBalance": INITIAL_BALANCE,
-      "senderAddress": "blockchain-reward-wallet",
-      "senderPublicKey": "0x04d74e636a437e38f42209125c2fa7f76bdfb164447352f00cb8ff7da895d36fddd56d0c6a0f5f6d732ff5d8c4ee02fda6a7d94a4efdf2d49af0e122673ae757bf",
+      "senderAddress": "0x00000000000000000000000000000000000000",
+      "senderPublicKey": "0x0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
       "signature": {
           "r": "0x00",
           "s": "0x00",
@@ -31,7 +30,7 @@ const FAUCET_TRANSACTION = {
     "outputs": [
       {
           "newSenderSafeBalance": BigInt(1000000000000000),
-          "address": "blockchain-reward-wallet"
+          "address": "0x00000000000000000000000000000000000000"
       },
       {
           "sentAmount": BigInt(9999999999999),
@@ -43,4 +42,4 @@ const FAUCET_TRANSACTION = {
     "transferSuccessful": true
   }
   
-module.exports = {DIFFICULTY, MINE_RATE, INITIAL_BALANCE, MINING_REWARD, COIN, MICRO_COIN, MILLI_COIN, MINIMUM_TRANSACTION_FEE, FAUCET_TRANSACTION, FAUCET_REWARD, BLOCK_SIZE_LIMIT};
+module.exports = {DIFFICULTY, MINE_RATE, INITIAL_BALANCE, MINING_REWARD, COIN, MICRO_COIN, MILLI_COIN, MINIMUM_TRANSACTION_FEE, FAUCET_TRANSACTION, FAUCET_REWARD};

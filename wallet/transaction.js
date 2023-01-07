@@ -79,7 +79,22 @@ class Transaction {
       outputs.gas,
       date,
       senderWallet.publicKey
-    );
+  );
+
+    // for mining rewards
+    if(senderWallet.address === "blockchain-reward-wallet"){
+      let zero = "0";
+      transaction.input = {
+        transactionHash: hash,
+        dateCreated: date,
+        senderConfirmedBalance: senderWallet.confirmedBalance,
+        senderAddress: senderWallet.address,
+        senderPublicKey: senderWallet.publicKey,
+        signature: {r: zero.repeat(64), s: zero.repeat(64)},
+      };
+      return;
+    }
+    // normal
     transaction.input = {
       transactionHash: hash,
       dateCreated: date,
@@ -139,4 +154,3 @@ class Transaction {
 
 module.exports = Transaction;
 
-// senderWallet, recipient, amount, blockchain, transactionPool, gas

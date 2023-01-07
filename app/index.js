@@ -18,6 +18,7 @@ const TransactionPool = require("../wallet/transaction-pool");
 const Miner = require("./miner");
 const ChainUtil = require("../chain-util");
 const {} = require("../config");
+const Block = require("../blockchain/block");
 
 // get port/host from user or set to defaults
 const HTTP_PORT = process.env.HTTP_PORT || 3001;
@@ -55,13 +56,13 @@ app.get("/ip", (req, res) => {
 });
 
 // ======= blocks/chain api =======
-app
-  .route("/blockchain")
-  .get((req, res) => res.json(blockchain.chain))
-  .post((req, res) => res.json(blockchain.chain));
+app.get(`/blockchain`, (req, res) => {
+  res.status(200).json(blockchain.chain);
+});
+
 
 app.get(`/blockchain/:index`, (req, res) => {
-  res.json(blockchain.chain[req.params.index]);
+  res.status(200).json(blockchain.chain[req.params.index]);
 });
 
 app.post("/blockchain/reset", (req, res) => {
@@ -71,30 +72,52 @@ app.post("/blockchain/reset", (req, res) => {
   blockchain.resetWallets(blockchain.wallets);
   peers.syncWalletsNew(blockchain.wallets);
 
-  res.json("Resetting the blockchain to Phil Collin's greatest album...");
+  res.status(200).json("Resetting the blockchain to Phil Collin's greatest album...");
 });
 
 // ======= mining api =======
-app.post("/mine", (req, res) => {
-  const block = blockchain.addBlock(req.body.data);
+app.post("/mining/debug", (req, res) => {
+  const block = miner.mineDebug();
   //   console.log(`New block added: ${block.toString()}`);
-  peers.syncChain();
-  res.redirect("/blockchain");
+  res.status(200).json(blockchain.chain);
 });
 
-app.post("/mine-transactions", (req, res) => {
-  const block = miner.mine();
-  //   console.log(`New block added: ${block.toString()}`);
-  // res.json(blockchain.chain);
-  res.redirect("/blockchain");
+app.get("/mining/job", (req, res) => {
+let job =  blockchain.createMiningJob(transactionPool, wallet.address, blockchain, peers);
+miner.currentJob = [];
+miner.currentJob.push(job);
+// console.log(miner.currentJob);
+  res.status(200).json(job);
 });
+
+app.post("/mining/submitBlock", (req, res) => {
+  if(miner.currentJob.length === 0){
+    res.status(400).json("You need a job Spicoli, request a new mining job from the node!");
+    return;
+  }
+
+  if(miner.currentJob[0].index < blockchain.getLatestBlock().index){
+    res.status(400).json("This block has already been mined! Grab a new job from the node!");
+    miner.currentJob = [];
+    return;
+  }
+  const block = miner.solveBlock(miner.currentJob[0]);
+  const result = blockchain.validateBlock(block, transactionPool, peers, miner);
+  // successfully added to chain
+  if(result.reward){
+    res.status(200).json(result);
+    return;
+  } 
+  
+  res.status(result.errorCode).json(result.message);
+  });
 
 // ======= transactions api =======
 app
-  .route("/transactions/pending")
-  .get((req, res) => res.json(transactionPool.transactions))
-  .post((req, res) => res.json(transactionPool.transactions));
-
+  .get("/transactions/pending",(req, res) => {
+    res.json(transactionPool.transactions);
+  });
+  
 app.get("/transactions/confirmed", (req, res) => {
   const confirmedFound = blockchain.findConfirmedTransactions();
   const confirmedTransactions = {
@@ -114,27 +137,72 @@ app.get("/transactions/hash/:hash", (req, res) => {
 
 app.get("/transactions/address/:address", (req, res) => {
   const addressToFind = req.params.address;
-  console.log(addressToFind);
+  // console.log(addressToFind);
+  const addressFound = blockchain.wallets.find(wallet => wallet.address === addressToFind);
+
+  if(!addressFound){
+    res.status(404).json({errorMsg: "Invalid address"});
+    return;
+  }
+
   const transactionsFound = blockchain.findTransactionByAddress(addressToFind);
   const pendingFound =
     transactionPool.findTransactionPoolByAddress(addressToFind);
-  res.json([
-    {
-      info: "These transactions are from the blockchain",
-      quantity: transactionsFound.length,
-      confirmedTransactions: transactionsFound,
-    },
-    {
-      info: "These transactions have not been mined yet",
-      quantity: pendingFound.length,
-      pendingTransactions: pendingFound,
-    },
-  ]);
+
+    res.status(200).json([
+      {
+        info: "These are confirmed transactions from the blockchain",
+        quantity: transactionsFound.length,
+        confirmedTransactions: transactionsFound,
+      },
+      {
+        info: "These pending transactions have not been mined yet",
+        quantity: pendingFound.length,
+        pendingTransactions: pendingFound,
+      },
+    ]);
+  
+ 
 });
 
 app.post("/transactions/create", (req, res) => {
   const { recipient, amount, gas } = req.body;
   // console.log(recipient, amount, gas);
+  let reg = /^0x[a-fA-F0-9]{40}$/;
+
+
+
+  if(recipient === undefined){
+    res.status(400).json({errorMsg: "Invalid transaction: field 'recipient' is missing"});
+    return;
+  }
+
+  if(!reg.test(recipient)){
+    res.status(400).json({errorMsg: "Invalid transaction: field 'recipient' is not a valid address"});
+    return;
+  }
+
+  if(amount === undefined){
+    res.status(400).json({errorMsg: "Invalid transaction: field 'amount' is missing"});
+    return;
+  }  
+  if(amount <= 0  || typeof(amount) !== "number"){
+    res.status(400).json({errorMsg: "Invalid transaction: field 'amount' must be a number greater than 0"});
+    return;
+  }
+  if(gas === undefined){
+    res.status(400).json({errorMsg: "Invalid transaction: field 'gas' is missing"});
+    return;
+  }
+  if(gas < 10 || typeof(gas) === "string"){
+    res.status(400).json({errorMsg: "Invalid transaction: field 'gas' must be a number of 10 or more"});
+    return;
+  }
+
+  if (BigInt(wallet.confirmedBalance) < BigInt(amount) + BigInt(gas)) {
+    res.status(400).json(`Amount ${amount + gas} exceeds the current balance: ${wallet.confirmedBalance}`);
+    return;
+  }
 
   const transaction = wallet.createTransaction(
     wallet,
@@ -146,7 +214,7 @@ app.post("/transactions/create", (req, res) => {
   );
   // console.log("transaction", transaction);
   peers.broadcastTransaction(transaction);
-  res.redirect("/transactions/pending");
+  res.json(transactionPool.transactions);
 });
 
 // ======= wallet api =======

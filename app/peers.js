@@ -6,9 +6,6 @@ BigInt.prototype.toJSON = function () {
   return this.toString();
 };
 
-// peer to peer server port (user given or default)
-// const P2P_PORT = process.env.P2P_PORT || 5001;
-
 // list of addresses to connect to
 const peers = process.env.PEERS ? process.env.PEERS.split(",") : [];
 
@@ -22,7 +19,8 @@ const MESSAGE_TYPE = {
   chain_reset: "CHAIN_RESET",
   peer: "PEER",
   socket: "SOCKET",
-  pending: "PENDING"
+  // pending: "PENDING"
+  pending_difficulty: "PENDING_DIFFICULTY"
 };
 
 class Peers {
@@ -51,20 +49,7 @@ class Peers {
   disconnect() {
     this.server.close();
   }
- // called from api
-  connect(newPort, currPeers, blockchain, transactionPool, newWallet){
-    const newPeer = new Peers(blockchain, transactionPool, newWallet, newPort);
-    // newPeer.listen();
-    // console.log(newPort, currPeers);
-    
-    currPeers.forEach((peer) => {
-      var socket = new WebSocket(peer);
-      socket.on("open", () => {
-        this.connectSocket(socket);
-      });
-    });
- 
-  }
+
 
   // listen on p2p server for connections
   listen() {
@@ -161,9 +146,24 @@ class Peers {
             this.peers.splice(this.peers.indexOf(url2), 1);
           }
           this.sockets.pop();
+        case MESSAGE_TYPE.pending_difficulty:
+            // set difficulty for next block
+            this.blockchain.setDifficulty(data.difficulty);
+            break;
       }
     });
   }
+
+    // brodcast pendingDifficulty to each peer
+    broadcastDifficulty(difficulty) {
+      this.sockets.forEach((socket) => {
+        socket.send(
+          JSON.stringify({
+            type: MESSAGE_TYPE.pending_difficulty, difficulty
+          })
+        );
+      });
+    }
 
   // update peers socket disconnected
   syncSockets(id, port) {

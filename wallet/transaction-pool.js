@@ -1,4 +1,4 @@
-const Transaction = require('./transaction');
+const Transaction = require("./transaction");
 
 class TransactionPool {
   constructor() {
@@ -20,8 +20,7 @@ class TransactionPool {
     if (existingTrans) {
       console.log("matching hash, updating transaction");
       // console.log(transaction.transactionHash);
-      this.transactions[this.transactions.indexOf(existingTrans)] =
-        transaction;
+      this.transactions[this.transactions.indexOf(existingTrans)] = transaction;
     } else {
       this.transactions.push(transaction);
       console.log("adding a new transaction to pool");
@@ -30,36 +29,41 @@ class TransactionPool {
   }
 
   validTransactions() {
-    // valid if total outputs equal inputs and signatures are the same
-  
     return this.transactions.filter((transaction) => {
-      if(transaction.input.address === "faucet-wallet" || transaction.input.address === "blockchain-reward-wallet"){
-        transaction.transferSuccessful = true;
+      console.log(transaction);
+      if (
+        transaction.input.address === "faucet-wallet" ||
+        transaction.input.address === "0x00000000000000000000000000000000000000"
+      ) {
         return transaction;
       }
 
       let inputAmount = BigInt(0);
       let outputTotal = BigInt(0);
 
-      for(let i = 0; i < transaction.outputs.length; i++){
+      for (let i = 0; i < transaction.outputs.length; i++) {
         let currOutput = transaction.outputs[i];
         // console.log(currOutput);
-        if(currOutput.newSenderPendingBalance){
+        if (currOutput.newSenderPendingBalance) {
           // console.log(currOutput);
           inputAmount = BigInt(currOutput.newSenderPendingBalance);
-        } else{
-          // console.log(currOutput);
-          outputTotal +=  BigInt(currOutput.sentAmount) + BigInt(currOutput.gas);
+        } else {
+          console.log(currOutput);
+          outputTotal += BigInt(currOutput.sentAmount) + BigInt(currOutput.gas);
         }
-
       }
 
       // console.log(outputTotal);
 
-      if (BigInt(transaction.input.senderConfirmedBalance)  !== BigInt(inputAmount + outputTotal)) {
+      if (
+        BigInt(transaction.input.senderConfirmedBalance) !==
+        BigInt(inputAmount + outputTotal)
+      ) {
         console.log(transaction.input.senderConfirmedBalance);
         console.log(inputAmount, outputTotal);
-        console.log(`Invalid transaction (input/output) from ${transaction.input.address}`);
+        console.log(
+          `Invalid transaction (input/output) from ${transaction.input.address}`
+        );
         return;
       }
 
@@ -74,13 +78,18 @@ class TransactionPool {
 
   findTransactionPoolByAddress(addressToFind) {
     let matchingTransactions = [];
-    for(let i = 0; i < this.transactions.length; i++){
+    for (let i = 0; i < this.transactions.length; i++) {
       let currentTrans = this.transactions[i];
-      if(currentTrans.outputs[0].address === addressToFind || currentTrans.outputs[1].address === addressToFind){
+      if (
+        currentTrans.outputs[0].address === addressToFind ||
+        currentTrans.outputs[1].address === addressToFind
+      ) {
         matchingTransactions.push(currentTrans);
       }
     }
-    return matchingTransactions.sort((a, b) => a.input.dateCreated > b.input.dateCreated ? 1 : -1);
+    return matchingTransactions.sort((a, b) =>
+      a.input.dateCreated > b.input.dateCreated ? 1 : -1
+    );
   }
 }
 

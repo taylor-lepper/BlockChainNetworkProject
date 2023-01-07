@@ -35,11 +35,15 @@ class Wallet {
   }
 
   static blockchainWallet() {
+    let zero = "0";
     const blockchainWallet = new this(
       BigInt(1000000000000),
       "Mining Rewards Wallet from Genesis"
     );
-    blockchainWallet.address = "blockchain-reward-wallet";
+    blockchainWallet.address = "0x" + zero.repeat(38);
+    blockchainWallet.publicKey = "0x" + zero.repeat(130);
+    blockchainWallet.publicKeyCompressed = "0x" + zero.repeat(66);
+    blockchainWallet.privateKey = "0x" + zero.repeat(64);
     return blockchainWallet;
   }
 
@@ -57,23 +61,13 @@ class Wallet {
     transactionPool,
     gas
   ) {
-    if (
-      !senderWallet.address === "mining-reward-wallet" ||
-      !senderWallet.address === "faucet=wallet"
-    ) {
-      if (BigInt(gas) <= BigInt(MINIMUM_TRANSACTION_FEE)) {
-        console.log(
-          `Gas fee "${gas}" is less than the minimum gas fee amount ${MINIMUM_TRANSACTION_FEE}`
-        );
-      }
-    }
-
+  
     // this.balance = this.calculateBalance(blockchain);
-    if (BigInt(amount) > BigInt(senderWallet.confirmedBalance)) {
+    if (BigInt(senderWallet.confirmedBalance) < BigInt(amount) + BigInt(gas)) {
       console.log(
         `Amount ${amount} exceeds the current balance: ${senderWallet.confirmedBalance}`
       );
-      return;
+      return `Amount ${amount} exceeds the current balance: ${senderWallet.confirmedBalance}`;
     }
     // console.log(transactionPool);
     let transaction = transactionPool.isExistingTransaction(this.address);
@@ -214,7 +208,7 @@ class Wallet {
         transaction.outputs.find((output) => {
           if (output.address === this.address) {
             console.log("found output");
-            confirmedBalance += output.sentAmount;
+            confirmedBalance += BigInt(output.sentAmount);
           }
         });
       }
