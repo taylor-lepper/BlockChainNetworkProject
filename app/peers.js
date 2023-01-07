@@ -327,7 +327,7 @@ class Peers {
         currentPeers: this.peers,
         currentDifficulty:
           this.blockchain.chain[this.blockchain.chain.length - 1].difficulty,
-        cumulativeDifficulty: this.blockchain.calculateCumulativeDifficulty(),
+        cumulativeDifficulty: this.blockchain.calculateCumulativeDifficulty(this.blockchain.chain),
         blocksCount: this.blockchain.chain.length,
         confirmedTransactions: this.blockchain.calculateConfirmedTransactions(),
         pendingTransactions: this.transactionPool.transactions.length,
